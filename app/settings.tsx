@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -319,8 +320,14 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
           </Pressable>
-          <InfoRow label={t('settings.version')} value="1.2.0" />
-          <InfoRow label={t('settings.build')} value="iOS · React Native" />
+          <InfoRow
+            label={t('settings.version')}
+            value={Constants.expoConfig?.version ?? '1.0.0'}
+          />
+          <InfoRow
+            label={t('settings.build')}
+            value={`iOS · Expo SDK ${Constants.expoConfig?.sdkVersion?.split('.')[0] ?? '54'}`}
+          />
           <InfoRow label={t('settings.tone')} value={t('app.motto')} />
         </Section>
 

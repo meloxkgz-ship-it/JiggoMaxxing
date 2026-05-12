@@ -273,11 +273,18 @@ export default function PlanScreen() {
           <View style={styles.heatRow}>
             {last28.map((cnt, i) => {
               const ratio = items.length ? Math.min(1, cnt / items.length) : 0;
-              // bronze intensity from hairline → bright
               const alpha = ratio === 0 ? 0.12 : 0.3 + ratio * 0.7;
+              const date = lastNDates(28)[i];
               return (
-                <View
+                <Pressable
                   key={i}
+                  onPress={() => {
+                    Haptics.selectionAsync().catch(() => {});
+                    const label = new Date(date).toLocaleDateString(undefined, {
+                      weekday: 'short', month: 'short', day: 'numeric',
+                    });
+                    Alert.alert(label, `${cnt} / ${items.length}`);
+                  }}
                   style={[
                     styles.heatCell,
                     {

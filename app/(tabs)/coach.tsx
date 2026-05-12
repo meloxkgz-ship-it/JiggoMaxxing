@@ -181,6 +181,15 @@ export default function CoachScreen() {
     setError(null);
   };
 
+  const copyAll = async () => {
+    if (turns.length === 0) return;
+    const transcript = turns
+      .map((tn) => `${tn.role === 'user' ? 'You' : 'Coach'}:\n${tn.content}`)
+      .join('\n\n');
+    await Clipboard.setStringAsync(transcript);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  };
+
   if (hasKey === null) {
     return (
       <View style={[styles.root, { alignItems: 'center', justifyContent: 'center' }]}>
@@ -201,7 +210,12 @@ export default function CoachScreen() {
             <Text style={styles.headerTitle}>{t('coach.subtitle')}</Text>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          {turns.length > 0 && (
+            <Pressable hitSlop={10} onPress={copyAll}>
+              <Ionicons name="copy-outline" size={18} color={colors.textSecondary} />
+            </Pressable>
+          )}
           <Pressable hitSlop={10} onPress={() => setView(view === 'chat' ? 'topics' : 'chat')}>
             <Ionicons name={view === 'chat' ? 'apps-outline' : 'chatbubble-outline'} size={18} color={colors.textSecondary} />
           </Pressable>

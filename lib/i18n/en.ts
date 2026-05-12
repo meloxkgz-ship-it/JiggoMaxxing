@@ -330,6 +330,8 @@ export default {
     error: 'Coach unavailable. Check your network or API key.',
     copied: 'Copied',
     regenerate: 'Regenerate',
+    copyAll: 'Copy full chat',
+    chatCopied: 'Chat copied',
     clearTitle: 'Clear coach history?',
     clearBody: 'This wipes all coach conversations on this device.',
   },

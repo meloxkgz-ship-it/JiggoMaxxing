@@ -330,6 +330,8 @@ export default {
     error: 'Coach nicht erreichbar. Prüf Netzwerk oder API-Key.',
     copied: 'Kopiert',
     regenerate: 'Neu generieren',
+    copyAll: 'Ganzen Chat kopieren',
+    chatCopied: 'Chat kopiert',
     clearTitle: 'Coach-Verlauf löschen?',
     clearBody: 'Löscht alle Coach-Konversationen auf diesem Gerät.',
   },
