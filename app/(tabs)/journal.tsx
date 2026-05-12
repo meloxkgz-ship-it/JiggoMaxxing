@@ -1,0 +1,237 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import { Card } from '@/components/Card';
+import { Eyebrow } from '@/components/Eyebrow';
+import { ScreenHeader } from '@/components/ScreenHeader';
+import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
+import { deleteEntry, listEntries, relativeDate } from '@/lib/journal';
+import { JournalEntry } from '@/lib/types';
+
+const MOOD_COLORS: Record<string, string> = {
+  sharp: '#7E9E7A',
+  even:  '#B08A5A',
+  foggy: '#5C5C5A',
+  low:   '#B0584F',
+  wired: '#C6A16A',
+};
+
+export default function JournalScreen() {
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+
+  useFocusEffect(useCallback(() => {
+    (async () => setEntries(await listEntries()))();
+  }, []));
+
+  const weights = entries
+    .filter((e) => typeof e.weightKg === 'number')
+    .slice(0, 14)
+    .reverse();
+  const latest = entries[0];
+  const previous = entries[1];
+  const delta =
+    latest?.weightKg && previous?.weightKg
+      ? (latest.weightKg - previous.weightKg).toFixed(1)
+      : null;
+
+  const confirmDelete = (e: JournalEntry) => {
+    Alert.alert('Delete entry?', e.notes ? `"${e.notes.slice(0, 60)}…"` : 'This entry will be removed.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive',
+        onPress: async () => {
+          await deleteEntry(e.id);
+          setEntries(await listEntries());
+        },
+      },
+    ]);
+  };
+
+  return (
+    <View style={styles.root}>
+      <ScreenHeader
+        eyebrow="Physique"
+        title="Journal"
+        subtitle="Track weight, mood, sleep, and your own notes — privately."
+      />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <Card variant="elevated" style={{ gap: spacing.md }}>
+          <View style={styles.metaRow}>
+            <Eyebrow>Weight · last 14</Eyebrow>
+            {delta && (
+              <Text style={Number(delta) <= 0 ? styles.deltaPos : styles.deltaNeg}>
+                {delta} kg
+              </Text>
+            )}
+          </View>
+          {weights.length === 0 ? (
+            <Text style={styles.emptySmall}>Log a weight to see your trend.</Text>
+          ) : (
+            <View style={styles.spark}>
+              {weights.map((e, i) => {
+                const vals = weights.map((x) => x.weightKg!).filter(Boolean);
+                const min = Math.min(...vals);
+                const max = Math.max(...vals);
+                const range = Math.max(0.4, max - min);
+                const h = ((e.weightKg! - min) / range) * 56 + 8;
+                return (
+                  <View
+                    key={e.id}
+                    style={[
+                      styles.bar,
+                      { height: h, backgroundColor: i === weights.length - 1 ? colors.bronze : colors.surfaceMuted },
+                    ]}
+                  />
+                );
+              })}
+            </View>
+          )}
+          <View style={styles.statsRow}>
+            <Stat label="Current" value={latest?.weightKg?.toFixed(1) ?? '—'} unit="kg" />
+            <Stat
+              label="Avg 7d"
+              value={
+                entries.slice(0, 7).filter((e) => e.weightKg).length
+                  ? (
+                      entries
+                        .slice(0, 7)
+                        .filter((e) => e.weightKg)
+                        .reduce((acc, e) => acc + e.weightKg!, 0) /
+                      entries.slice(0, 7).filter((e) => e.weightKg).length
+                    ).toFixed(1)
+                  : '—'
+              }
+              unit="kg"
+            />
+            <Stat label="Entries" value={entries.length.toString()} unit="" />
+          </View>
+        </Card>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHead}>
+            <Eyebrow>Entries</Eyebrow>
+            <Pressable hitSlop={8} onPress={() => router.push('/journal-entry' as any)}>
+              <Ionicons name="add-circle" size={26} color={colors.bronze} />
+            </Pressable>
+          </View>
+
+          {entries.length === 0 && (
+            <Card variant="outline" style={styles.empty}>
+              <Text style={styles.emptyTitle}>Nothing logged yet.</Text>
+              <Text style={styles.emptyBody}>
+                Tap the + above to log your first entry. Even one line counts.
+              </Text>
+              <Pressable
+                style={styles.emptyCta}
+                onPress={() => router.push('/journal-entry' as any)}>
+                <Ionicons name="add" size={14} color={colors.textOnBronze} />
+                <Text style={styles.emptyCtaText}>New entry</Text>
+              </Pressable>
+            </Card>
+          )}
+
+          {entries.map((e) => (
+            <Card key={e.id} variant="outline" style={styles.entry}>
+              <View style={styles.entryHead}>
+                <Text style={styles.entryDate}>{relativeDate(e.date)}</Text>
+                <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                  {e.mood && (
+                    <View style={[styles.moodPill, { borderColor: MOOD_COLORS[e.mood] }]}>
+                      <Text style={[styles.moodText, { color: MOOD_COLORS[e.mood] }]}>{e.mood}</Text>
+                    </View>
+                  )}
+                  <Pressable hitSlop={8} onPress={() => confirmDelete(e)}>
+                    <Ionicons name="ellipsis-horizontal" size={16} color={colors.textTertiary} />
+                  </Pressable>
+                </View>
+              </View>
+              {(e.weightKg || e.sleepHours) && (
+                <View style={styles.entryStats}>
+                  {e.weightKg && (
+                    <View style={styles.statChip}>
+                      <Ionicons name="scale-outline" size={12} color={colors.bronze} />
+                      <Text style={styles.statChipText}>{e.weightKg.toFixed(1)} kg</Text>
+                    </View>
+                  )}
+                  {e.sleepHours && (
+                    <View style={styles.statChip}>
+                      <Ionicons name="moon-outline" size={12} color={colors.bronze} />
+                      <Text style={styles.statChipText}>{e.sleepHours} h</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+              {e.notes ? <Text style={styles.entryNote}>{e.notes}</Text> : null}
+            </Card>
+          ))}
+        </View>
+
+        <View style={{ height: 120 }} />
+      </ScrollView>
+    </View>
+  );
+}
+
+function Stat({ label, value, unit }: { label: string; value: string; unit: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statLabel}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+        <Text style={styles.statValue}>{value}</Text>
+        {unit && <Text style={styles.statUnit}>{unit}</Text>}
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.ink },
+  content: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.lg },
+
+  metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  deltaPos: { color: colors.positive, fontFamily: type.family.sansSemi, fontSize: 13 },
+  deltaNeg: { color: colors.danger, fontFamily: type.family.sansSemi, fontSize: 13 },
+  spark: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 70, marginTop: spacing.sm },
+  bar: { flex: 1, borderRadius: 2, minHeight: 4 },
+
+  statsRow: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md, paddingTop: spacing.md, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline },
+  stat: { flex: 1, gap: 4 },
+  statLabel: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' },
+  statValue: { color: colors.textPrimary, fontFamily: type.family.sansBlack, fontSize: 22, letterSpacing: type.letterSpacing.tight },
+  statUnit: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11, marginLeft: 3, marginBottom: 4 },
+  emptySmall: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 12, paddingVertical: spacing.md },
+
+  section: { gap: spacing.md, marginTop: spacing.md },
+  sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+
+  empty: { gap: spacing.sm, alignItems: 'flex-start' },
+  emptyTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 15 },
+  emptyBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13, lineHeight: 19 },
+  emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.lg, paddingVertical: 9, backgroundColor: colors.bronze, borderRadius: radius.pill, marginTop: spacing.sm },
+  emptyCtaText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 12 },
+
+  entry: { gap: spacing.sm },
+  entryHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  entryDate: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14 },
+  moodPill: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth },
+  moodText: { fontFamily: type.family.sansMedium, fontSize: 10.5, letterSpacing: 0.4, textTransform: 'uppercase' },
+
+  entryStats: { flexDirection: 'row', gap: 8 },
+  statChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 9, paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bronzeOnBlack,
+  },
+  statChipText: { color: colors.textPrimary, fontFamily: type.family.sansMedium, fontSize: 11.5 },
+  entryNote: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13.5, lineHeight: 20 },
+});

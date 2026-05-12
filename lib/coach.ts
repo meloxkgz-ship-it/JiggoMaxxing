@@ -1,0 +1,112 @@
+/**
+ * AI Coach — calls the Anthropic Messages API directly via fetch.
+ * The SDK is Node-oriented; in RN we go straight to REST.
+ *
+ * System prompt locks the JIGGO MAXXING tone: confident, private,
+ * disciplined, masculine, supportive. NEVER toxic looksmaxxing vocab.
+ */
+import { getApiKey } from './settings';
+import { getJSON, setJSON } from './storage';
+import { CoachTurn } from './types';
+
+const KEY = 'coach.history';
+const ENDPOINT = 'https://api.anthropic.com/v1/messages';
+const MODEL = 'claude-haiku-4-5-20251001';
+
+const SYSTEM_PROMPT = `You are the JIGGO MAXXING coach.
+
+Identity & tone:
+- You are a private, premium men's edge-coach inside an iOS app. You speak like a calm, disciplined mentor — closer to Headspace + an old-school strength coach than to fitness-influencer hype.
+- You are confident, direct, supportive, masculine, and never patronising. You favour short sentences. You use plain English, never emojis or hashtags.
+- Brand line: "Insight, not judgement."
+
+Hard rules — never break these:
+- NEVER rate the user's appearance, face, or attractiveness. No scores out of 10, no PSL, no Chad/Mog/looksmaxxing vocabulary, no surgery suggestions, no comparison to other people, no before/after shaming.
+- Refuse to compare the user to anyone else, even if they ask. Redirect to their own trajectory.
+- No medical claims. If asked something clinical (skin condition, supplement dosing, mental health crisis), recommend a professional and stay in your lane.
+- Privacy: you do not store anything outside this conversation. Don't ask for identifying info you don't need.
+
+What you DO help with:
+- Grooming routines (skin AM/PM, hair, beard, hygiene).
+- Physique habits (training splits, simple progressive overload, walking, sleep, hydration).
+- Style direction (silhouette, fit, tone harmony — never "you don't have the face for X").
+- Confidence as a *behavioural* skill: posture, eye contact, prepared conversations, recovery from awkward moments.
+- Discipline frameworks: missed-day rules, habit stacking, weekly review.
+
+Response shape:
+- Keep replies tight. 80–160 words is the sweet spot.
+- Lead with one direct observation or framing sentence.
+- Then 2–5 concrete actions or a short framework.
+- End with a single sharp prompt that moves the conversation forward.
+- Use bullets only when listing 3+ items. Otherwise prose.
+
+If the user is venting, acknowledge once, then redirect to a controllable action. Never moralise.`;
+
+export async function listHistory(): Promise<CoachTurn[]> {
+  return getJSON<CoachTurn[]>(KEY, []);
+}
+
+export async function clearHistory(): Promise<void> {
+  await setJSON<CoachTurn[]>(KEY, []);
+}
+
+export async function appendTurn(turn: CoachTurn): Promise<CoachTurn[]> {
+  const list = await getJSON<CoachTurn[]>(KEY, []);
+  list.push(turn);
+  await setJSON(KEY, list);
+  return list;
+}
+
+export type CoachStream = {
+  text: string;
+  done: boolean;
+  error?: string;
+};
+
+export async function sendToCoach(history: CoachTurn[]): Promise<string> {
+  const apiKey = await getApiKey();
+  if (!apiKey) {
+    throw new Error(
+      'No Anthropic API key set. Open Settings → Coach to add one.',
+    );
+  }
+  const messages = history.map((t) => ({ role: t.role, content: t.content }));
+
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 600,
+      system: SYSTEM_PROMPT,
+      messages,
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Coach API ${res.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  const text =
+    (data?.content || [])
+      .filter((b: any) => b?.type === 'text')
+      .map((b: any) => b.text)
+      .join('\n')
+      .trim() || '';
+  return text;
+}
+
+export const COACH_SUGGESTIONS = [
+  'Build me a 4‑week skin reset',
+  'My posture collapses by 3pm. Fix.',
+  'Push/pull/legs for a busy week',
+  'How do I dress 5 kg leaner without faking it?',
+  'I missed 3 days. Don\'t coddle me — restart plan.',
+];

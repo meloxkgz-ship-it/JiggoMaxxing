@@ -1,24 +1,95 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_900Black,
+} from '@expo-google-fonts/inter';
+import { colors } from '@/constants/jiggo-theme';
+import { getSettings } from '@/lib/settings';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
-export const unstable_settings = {
-  anchor: '(tabs)',
+const JiggoDarkTheme = {
+  ...DarkTheme,
+  dark: true,
+  colors: {
+    ...DarkTheme.colors,
+    background: colors.ink,
+    card: colors.ink,
+    text: colors.textPrimary,
+    primary: colors.bronze,
+    border: colors.hairline,
+    notification: colors.bronzeBright,
+  },
 };
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const [fontsLoaded] = useFonts({
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
+    Inter_900Black,
+  });
+  const [bootstrapped, setBootstrapped] = useState(false);
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const navState = useRootNavigationState();
+  const segments = useSegments();
+
+  useEffect(() => {
+    (async () => {
+      const s = await getSettings();
+      setOnboarded(!!s.hasOnboarded);
+      setBootstrapped(true);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (fontsLoaded && bootstrapped) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded, bootstrapped]);
+
+  useEffect(() => {
+    if (!navState?.key || onboarded === null) return;
+    const inOnboarding = segments[0] === 'onboarding';
+    if (!onboarded && !inOnboarding) {
+      router.replace('/onboarding' as any);
+    }
+  }, [navState?.key, onboarded, segments]);
+
+  if (!fontsLoaded || !bootstrapped) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+    <ThemeProvider value={JiggoDarkTheme}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.ink },
+          animation: 'fade',
+        }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding" options={{ animation: 'none' }} />
+        <Stack.Screen
+          name="settings"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="journal-entry"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="scan-detail"
+          options={{ presentation: 'card', animation: 'slide_from_right' }}
+        />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
     </ThemeProvider>
   );
 }
