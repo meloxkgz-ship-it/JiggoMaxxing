@@ -330,6 +330,8 @@ export default {
     privacy: 'Privatsphäre',
     privacyBody: 'JIGGO MAXXING ist local-first. Scans, Journal-Einträge, Plan-Fortschritt und Fits verlassen nie dein Gerät. Coach-Turns gehen nur zu Anthropic (wenn du zustimmst).',
     privacyPledge: 'Keine Analytics. Keine Accounts. Keine Bewertungen. Keine Vergleiche.',
+    exportData: 'Meine Daten exportieren',
+    exportDone: 'In die Zwischenablage kopiert ({n} Keys)',
     about: 'Über',
     version: 'Version',
     build: 'Build',

@@ -330,6 +330,8 @@ export default {
     privacy: 'Privacy',
     privacyBody: 'JIGGO MAXXING is local-first. Scans, journal entries, plan progress, and fits never leave your device. Coach turns go only to Anthropic (when you opt in).',
     privacyPledge: 'No analytics. No accounts. No ratings. No comparisons.',
+    exportData: 'Export my data',
+    exportDone: 'Copied to clipboard ({n} keys)',
     about: 'About',
     version: 'Version',
     build: 'Build',

@@ -27,7 +27,8 @@ import {
   scheduleNudgeNotification,
 } from '@/lib/notifications';
 import { getApiKey, getSettings, saveSettings, setApiKey } from '@/lib/settings';
-import { wipeAll } from '@/lib/storage';
+import { exportAll, wipeAll } from '@/lib/storage';
+import * as Clipboard from 'expo-clipboard';
 import { Settings } from '@/lib/types';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -265,6 +266,19 @@ export default function SettingsScreen() {
             <Ionicons name="lock-closed-outline" size={18} color={colors.bronze} />
             <Text style={styles.privacyText}>{t('settings.privacyPledge')}</Text>
           </View>
+          <Pressable
+            style={styles.exportBtn}
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+              const data = await exportAll();
+              const json = JSON.stringify(data, null, 2);
+              await Clipboard.setStringAsync(json);
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+              Alert.alert(t('settings.exportDone', { n: Object.keys(data).length }));
+            }}>
+            <Ionicons name="download-outline" size={14} color={colors.bronze} />
+            <Text style={styles.exportBtnText}>{t('settings.exportData')}</Text>
+          </Pressable>
         </Section>
 
         <Section title={t('settings.about')}>
@@ -401,6 +415,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   testNudgeText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 12, letterSpacing: 0.3 },
+
+  exportBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: spacing.lg, paddingVertical: 10,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    backgroundColor: colors.surface,
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+  },
+  exportBtnText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 12, letterSpacing: 0.3 },
 
   whyRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

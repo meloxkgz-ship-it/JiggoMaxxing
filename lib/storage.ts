@@ -47,3 +47,21 @@ export async function wipeAll(): Promise<void> {
     await AsyncStorage.multiRemove(ours);
   } catch {}
 }
+
+/** Dump every key under the JIGGO namespace into a single JSON object. */
+export async function exportAll(): Promise<Record<string, unknown>> {
+  try {
+    const all = await AsyncStorage.getAllKeys();
+    const ours = all.filter((k) => k.startsWith(NS));
+    const out: Record<string, unknown> = {};
+    for (const k of ours) {
+      const v = await AsyncStorage.getItem(k);
+      if (v == null) continue;
+      try { out[k.slice(NS.length)] = JSON.parse(v); }
+      catch { out[k.slice(NS.length)] = v; }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
