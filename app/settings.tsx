@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
@@ -6,6 +7,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -16,9 +18,18 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { clearHistory } from '@/lib/coach';
 import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
+import {
+  cancelNudgeNotification,
+  getNotificationPref,
+  NotificationPref,
+  requestPermission,
+  scheduleNudgeNotification,
+} from '@/lib/notifications';
 import { getApiKey, getSettings, saveSettings, setApiKey } from '@/lib/settings';
 import { wipeAll } from '@/lib/storage';
 import { Settings } from '@/lib/types';
+
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 export default function SettingsScreen() {
   const t = useT();
@@ -28,15 +39,46 @@ export default function SettingsScreen() {
   const [keyVisible, setKeyVisible] = useState(false);
   const [hasKey, setHasKey] = useState(false);
   const [keyStatus, setKeyStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [notifPref, setNotifPref] = useState<NotificationPref>({ enabled: false, hour: 9, minute: 0 });
 
   useEffect(() => {
     (async () => {
-      const [s, k] = await Promise.all([getSettings(), getApiKey()]);
+      const [s, k, np] = await Promise.all([getSettings(), getApiKey(), getNotificationPref()]);
       setSettings(s);
       setHasKey(!!k);
       if (k) setKeyDraft(k);
+      setNotifPref(np);
     })();
   }, []);
+
+  const onToggleNotif = async (next: boolean) => {
+    Haptics.selectionAsync().catch(() => {});
+    if (next) {
+      const granted = await requestPermission();
+      if (!granted) {
+        Alert.alert(t('settings.permissionNeeded'), t('settings.permissionBody'));
+        return;
+      }
+    }
+    const updated = { ...notifPref, enabled: next };
+    setNotifPref(updated);
+    const { setNotificationPref } = await import('@/lib/notifications');
+    await setNotificationPref(updated);
+    if (next) {
+      await scheduleNudgeNotification(updated, lang);
+    } else {
+      await cancelNudgeNotification();
+    }
+  };
+
+  const onChangeHour = async (h: number) => {
+    Haptics.selectionAsync().catch(() => {});
+    const updated = { ...notifPref, hour: h };
+    setNotifPref(updated);
+    const { setNotificationPref } = await import('@/lib/notifications');
+    await setNotificationPref(updated);
+    if (updated.enabled) await scheduleNudgeNotification(updated, lang);
+  };
 
   if (!settings) return null;
 
@@ -136,6 +178,38 @@ export default function SettingsScreen() {
               </Pressable>
             ))}
           </View>
+        </Section>
+
+        <Section title={t('settings.notifications')} subtitle={t('settings.notificationsSub')}>
+          <View style={styles.notifRow}>
+            <Text style={styles.notifLabel}>{t('settings.notificationsOn')}</Text>
+            <Switch
+              value={notifPref.enabled}
+              onValueChange={onToggleNotif}
+              trackColor={{ false: colors.surfaceMuted, true: colors.bronze }}
+              thumbColor={colors.textPrimary}
+            />
+          </View>
+          {notifPref.enabled && (
+            <View style={styles.notifTime}>
+              <Text style={styles.notifLabel}>{t('settings.notificationsTime')}</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 6, paddingVertical: 4 }}>
+                {HOURS.map((h) => (
+                  <Pressable
+                    key={h}
+                    onPress={() => onChangeHour(h)}
+                    style={[styles.hourChip, notifPref.hour === h && styles.hourChipActive]}>
+                    <Text style={[styles.hourChipText, notifPref.hour === h && styles.hourChipTextActive]}>
+                      {String(h).padStart(2, '0')}:00
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </Section>
 
         <Section title={t('settings.coach')} subtitle={t('settings.coachSub')}>
@@ -293,6 +367,19 @@ const styles = StyleSheet.create({
   },
   infoLabel: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 13 },
   infoValue: { color: colors.textPrimary, fontFamily: type.family.sansMedium, fontSize: 13 },
+
+  notifRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  notifLabel: { color: colors.textPrimary, fontFamily: type.family.sansMedium, fontSize: 14 },
+  notifTime: { gap: 8, marginTop: spacing.sm },
+  hourChip: {
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    backgroundColor: colors.surface,
+  },
+  hourChipActive: { backgroundColor: colors.bronze, borderColor: colors.bronze },
+  hourChipText: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.4 },
+  hourChipTextActive: { color: colors.textOnBronze },
 
   whyRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
