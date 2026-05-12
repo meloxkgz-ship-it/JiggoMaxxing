@@ -5,6 +5,7 @@ iOS App Store icon: 1024×1024.
 Splash icon: 200 wide (matches app.json imageWidth).
 """
 import os
+from typing import Optional
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 OUT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/assets/images"
@@ -14,25 +15,58 @@ BRONZE = (176, 138, 90)
 BRONZE_BRIGHT = (198, 161, 106)
 
 
-def draw_icon(size: int, path: str, *, frame_inset_ratio: float = 0.16, mark_size_ratio: float = 0.48) -> None:
+def find_font(prefer_thin: bool = False) -> Optional[str]:
+    candidates = (
+        [
+            "/System/Library/Fonts/HelveticaNeue.ttc",
+            "/System/Library/Fonts/Avenir Next.ttc",
+            "/System/Library/Fonts/Helvetica.ttc",
+        ]
+        if prefer_thin
+        else [
+            "/Library/Fonts/Arial Black.ttf",
+            "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+            "/System/Library/Fonts/HelveticaNeue.ttc",
+        ]
+    )
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
+
+
+def draw_text_letter(draw, ch: str, font, x: int, y: int, color):
+    """Draw a single letter at exact (x, y) — left/top-anchored."""
+    try:
+        box = draw.textbbox((0, 0), ch, font=font)
+        draw.text((x - box[0], y - box[1]), ch, font=font, fill=color)
+        return box[2] - box[0], box[3] - box[1]
+    except Exception:
+        w, h = font.getsize(ch)
+        draw.text((x, y), ch, font=font, fill=color)
+        return w, h
+
+
+def draw_icon(size: int, path: str, *, frame_inset_ratio: float = 0.16, mark_size_ratio: float = 0.34) -> None:
     img = Image.new("RGB", (size, size), INK)
     draw = ImageDraw.Draw(img)
 
-    # Subtle dark gradient via repeated dark squares
-    for i in range(8):
-        a = 8 + i * 1
+    # Faint bronze sheen — diagonal gradient sketch via overlay rectangles
+    for i in range(6):
+        a = 14 + i
         draw.rectangle(
-            (size * (0.0 + i * 0.005),
-             size * (0.0 + i * 0.005),
-             size * (1.0 - i * 0.005),
-             size * (1.0 - i * 0.005)),
+            (size * (0.02 + i * 0.005),
+             size * (0.02 + i * 0.005),
+             size * (0.98 - i * 0.005),
+             size * (0.98 - i * 0.005)),
             outline=(a, a, a),
         )
 
     # Bronze frame (rounded square outline)
     inset = int(size * frame_inset_ratio)
-    radius = int(size * 0.12)
-    stroke = max(3, int(size * 0.018))
+    radius = int(size * 0.13)
+    stroke = max(3, int(size * 0.022))
     draw.rounded_rectangle(
         (inset, inset, size - inset, size - inset),
         radius=radius,
@@ -40,33 +74,24 @@ def draw_icon(size: int, path: str, *, frame_inset_ratio: float = 0.16, mark_siz
         width=stroke,
     )
 
-    # JM monogram
-    font_path = None
-    for candidate in [
-        "/System/Library/Fonts/Helvetica.ttc",
-        "/System/Library/Fonts/HelveticaNeue.ttc",
-        "/Library/Fonts/Arial Black.ttf",
-        "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-    ]:
-        if os.path.exists(candidate):
-            font_path = candidate
-            break
-
+    # JM monogram — draw letters separately with comfortable kerning
+    font_path = find_font(prefer_thin=True)
     target_h = int(size * mark_size_ratio)
     if font_path:
-        # Find the best size that fits target_h
         font = ImageFont.truetype(font_path, target_h)
-        text = "JM"
-        try:
-            box = draw.textbbox((0, 0), text, font=font)
-            w, h = box[2] - box[0], box[3] - box[1]
-        except Exception:
-            w, h = font.getsize(text)
-        x = (size - w) // 2 - box[0]
-        y = (size - h) // 2 - box[1]
-        draw.text((x, y), text, font=font, fill=BRONZE)
+        # measure widths of each letter
+        box_j = draw.textbbox((0, 0), "J", font=font)
+        box_m = draw.textbbox((0, 0), "M", font=font)
+        wj, hj = box_j[2] - box_j[0], box_j[3] - box_j[1]
+        wm, hm = box_m[2] - box_m[0], box_m[3] - box_m[1]
+        kern = int(size * 0.045)  # generous breathing room between letters
+        total_w = wj + kern + wm
+        total_h = max(hj, hm)
+        x_start = (size - total_w) // 2
+        y_top = (size - total_h) // 2
+        draw_text_letter(draw, "J", font, x_start, y_top + (total_h - hj) // 2, BRONZE)
+        draw_text_letter(draw, "M", font, x_start + wj + kern, y_top + (total_h - hm) // 2, BRONZE)
     else:
-        # Fallback simple geometric mark
         cx = size // 2
         cy = size // 2
         r = int(size * 0.18)
@@ -76,32 +101,32 @@ def draw_icon(size: int, path: str, *, frame_inset_ratio: float = 0.16, mark_siz
 
 
 def draw_adaptive_foreground(size: int, path: str) -> None:
-    # Android foreground: monogram on transparent
+    # Android foreground: monogram with kerning on transparent
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    inset = int(size * 0.22)
+    inset = int(size * 0.24)
     radius = int(size * 0.08)
-    stroke = max(3, int(size * 0.016))
+    stroke = max(3, int(size * 0.018))
     draw.rounded_rectangle(
         (inset, inset, size - inset, size - inset),
         radius=radius,
         outline=BRONZE,
         width=stroke,
     )
-    font_path = "/System/Library/Fonts/Helvetica.ttc"
-    if os.path.exists(font_path):
-        font = ImageFont.truetype(font_path, int(size * 0.36))
-        text = "JM"
-        try:
-            box = draw.textbbox((0, 0), text, font=font)
-            w, h = box[2] - box[0], box[3] - box[1]
-            x = (size - w) // 2 - box[0]
-            y = (size - h) // 2 - box[1]
-        except Exception:
-            w, h = font.getsize(text)
-            x = (size - w) // 2
-            y = (size - h) // 2
-        draw.text((x, y), text, font=font, fill=BRONZE)
+    font_path = find_font()
+    if font_path:
+        font = ImageFont.truetype(font_path, int(size * 0.34))
+        box_j = draw.textbbox((0, 0), "J", font=font)
+        box_m = draw.textbbox((0, 0), "M", font=font)
+        wj, hj = box_j[2] - box_j[0], box_j[3] - box_j[1]
+        wm, hm = box_m[2] - box_m[0], box_m[3] - box_m[1]
+        kern = int(size * 0.045)
+        total_w = wj + kern + wm
+        total_h = max(hj, hm)
+        x = (size - total_w) // 2
+        y = (size - total_h) // 2
+        draw_text_letter(draw, "J", font, x, y + (total_h - hj) // 2, BRONZE)
+        draw_text_letter(draw, "M", font, x + wj + kern, y + (total_h - hm) // 2, BRONZE)
     img.save(path, "PNG")
 
 
@@ -113,29 +138,30 @@ def draw_adaptive_background(size: int, path: str) -> None:
 def draw_monochrome(size: int, path: str) -> None:
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    inset = int(size * 0.22)
+    inset = int(size * 0.24)
     radius = int(size * 0.08)
-    stroke = max(3, int(size * 0.016))
+    stroke = max(3, int(size * 0.018))
     draw.rounded_rectangle(
         (inset, inset, size - inset, size - inset),
         radius=radius,
         outline=(255, 255, 255, 230),
         width=stroke,
     )
-    font_path = "/System/Library/Fonts/Helvetica.ttc"
-    if os.path.exists(font_path):
-        font = ImageFont.truetype(font_path, int(size * 0.36))
-        text = "JM"
-        try:
-            box = draw.textbbox((0, 0), text, font=font)
-            w, h = box[2] - box[0], box[3] - box[1]
-            x = (size - w) // 2 - box[0]
-            y = (size - h) // 2 - box[1]
-        except Exception:
-            w, h = font.getsize(text)
-            x = (size - w) // 2
-            y = (size - h) // 2
-        draw.text((x, y), text, font=font, fill=(255, 255, 255, 240))
+    font_path = find_font()
+    if font_path:
+        font = ImageFont.truetype(font_path, int(size * 0.34))
+        box_j = draw.textbbox((0, 0), "J", font=font)
+        box_m = draw.textbbox((0, 0), "M", font=font)
+        wj, hj = box_j[2] - box_j[0], box_j[3] - box_j[1]
+        wm, hm = box_m[2] - box_m[0], box_m[3] - box_m[1]
+        kern = int(size * 0.045)
+        total_w = wj + kern + wm
+        total_h = max(hj, hm)
+        x = (size - total_w) // 2
+        y = (size - total_h) // 2
+        white = (255, 255, 255, 240)
+        draw_text_letter(draw, "J", font, x, y + (total_h - hj) // 2, white)
+        draw_text_letter(draw, "M", font, x + wj + kern, y + (total_h - hm) // 2, white)
     img.save(path, "PNG")
 
 
