@@ -10,9 +10,12 @@ import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { useT } from '@/lib/i18n';
+import * as Haptics from 'expo-haptics';
+
+import { useLanguage, useT } from '@/lib/i18n';
 import { listEntries, todayKey } from '@/lib/journal';
 import { getActivePlan, getCompletion } from '@/lib/plan';
+import { getNudgeStreak, getTodayNudge, isNudgeDone, Nudge, setNudgeDone } from '@/lib/nudge';
 import { listScans } from '@/lib/scan';
 import { getSettings } from '@/lib/settings';
 import { JournalEntry, PlanItem, ScanResult, Settings } from '@/lib/types';
@@ -26,28 +29,45 @@ function scoreToPillar(score: number): number {
 
 export default function HomeHubScreen() {
   const t = useT();
+  const { lang } = useLanguage();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [plan, setPlan] = useState<PlanItem[]>([]);
   const [planDone, setPlanDone] = useState(0);
+  const [nudge, setNudge] = useState<Nudge | null>(null);
+  const [nudgeDone, setNudgeDoneState] = useState(false);
+  const [nudgeStreak, setNudgeStreak] = useState(0);
 
   useFocusEffect(useCallback(() => {
     (async () => {
-      const [s, sc, je, pc, pp] = await Promise.all([
+      const [s, sc, je, pc, pp, nd, ns] = await Promise.all([
         getSettings(),
         listScans(),
         listEntries(),
         getCompletion(),
         getActivePlan(),
+        isNudgeDone(),
+        getNudgeStreak(),
       ]);
       setSettings(s);
       setScan(sc[0] ?? null);
       setJournal(je);
       setPlan(pp);
       setPlanDone((pc[todayKey()] ?? []).length);
+      setNudge(getTodayNudge(lang));
+      setNudgeDoneState(nd);
+      setNudgeStreak(ns);
     })();
-  }, []));
+  }, [lang]));
+
+  const toggleNudge = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    const next = !nudgeDone;
+    await setNudgeDone(next);
+    setNudgeDoneState(next);
+    setNudgeStreak(await getNudgeStreak());
+  };
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -100,6 +120,39 @@ export default function HomeHubScreen() {
           <Text style={styles.displayTitle}>{t('app.tagline').split('.')[0]}.</Text>
           <Text style={styles.tagline}>{greeting} {t('app.motto')}</Text>
         </View>
+
+        {/* Daily Edge Nudge */}
+        {nudge && (
+          <Pressable
+            onPress={toggleNudge}
+            style={[styles.nudgeCard, nudgeDone && styles.nudgeCardDone]}>
+            <View style={styles.nudgeHead}>
+              <View style={styles.nudgeBadge}>
+                <Ionicons
+                  name={nudgeDone ? 'checkmark-circle' : 'sparkles'}
+                  size={12}
+                  color={nudgeDone ? colors.positive : colors.bronze}
+                />
+                <Text style={[styles.nudgeBadgeText, nudgeDone && { color: colors.positive }]}>
+                  {nudgeDone ? t('home.nudgeDone') : t('home.nudge')}
+                </Text>
+              </View>
+              {nudgeStreak > 0 && (
+                <Text style={styles.nudgeStreak}>
+                  {t('home.nudgeStreak', { n: nudgeStreak })}
+                </Text>
+              )}
+            </View>
+            <Text style={styles.nudgeTitle}>{nudge.title}</Text>
+            <Text style={styles.nudgeBody}>{nudge.body}</Text>
+            <View style={styles.nudgeFoot}>
+              <Text style={styles.nudgeTheme}>{nudge.theme}</Text>
+              <View style={[styles.nudgeCheck, nudgeDone && styles.nudgeCheckDone]}>
+                {nudgeDone && <Ionicons name="checkmark" size={14} color={colors.textOnBronze} />}
+              </View>
+            </View>
+          </Pressable>
+        )}
 
         {/* Hero — edge index */}
         <View style={styles.heroWrap}>
@@ -343,6 +396,31 @@ const styles = StyleSheet.create({
     fontSize: type.size.body,
     marginTop: 6,
   },
+
+  nudgeCard: {
+    marginTop: spacing.xl,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.32)',
+    gap: 6,
+  },
+  nudgeCardDone: { borderColor: 'rgba(126,158,122,0.35)', backgroundColor: 'rgba(126,158,122,0.06)' },
+  nudgeHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  nudgeBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 9, paddingVertical: 4, borderRadius: radius.pill,
+    backgroundColor: colors.bronzeOnBlack,
+  },
+  nudgeBadgeText: { color: colors.bronze, fontFamily: type.family.sansSemi, fontSize: 10.5, letterSpacing: 0.4, textTransform: 'uppercase' },
+  nudgeStreak: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.3 },
+  nudgeTitle: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 18, lineHeight: 23, letterSpacing: type.letterSpacing.tight, marginTop: 2 },
+  nudgeBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13.5, lineHeight: 20 },
+  nudgeFoot: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.sm },
+  nudgeTheme: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10.5, letterSpacing: 0.6, textTransform: 'uppercase' },
+  nudgeCheck: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: colors.hairline, alignItems: 'center', justifyContent: 'center' },
+  nudgeCheckDone: { backgroundColor: colors.bronze, borderColor: colors.bronze },
 
   heroWrap: { marginTop: spacing.xl },
   hero: {

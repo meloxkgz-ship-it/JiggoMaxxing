@@ -18,12 +18,15 @@ import {
 import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { useT } from '@/lib/i18n';
+import { useLanguage, useT } from '@/lib/i18n';
 import { computeScan, listScans, saveScan } from '@/lib/scan';
+import en from '@/lib/i18n/en';
+import de from '@/lib/i18n/de';
 import { ScanResult } from '@/lib/types';
 
 export default function ScanScreen() {
   const t = useT();
+  const { lang } = useLanguage();
   const [scans, setScans] = useState<ScanResult[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -63,7 +66,8 @@ export default function ScanScreen() {
 
       setBusy(true);
       await new Promise((r) => setTimeout(r, 800));
-      const computed = computeScan(uri);
+      const insights = (lang === 'de' ? de : en).scan.insights as string[];
+      const computed = computeScan(uri, insights);
       const saved = await saveScan(computed);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setScans(await listScans());

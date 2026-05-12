@@ -353,3 +353,22 @@ export function buildSuggestion(
 export const OCCASIONS: Occasion[] = ['work', 'date', 'weekend', 'travel', 'formal', 'training'];
 export const ARCHETYPES: Archetype[] = ['tailored', 'workwear', 'street', 'tonal', 'athleisure', 'bold'];
 export const CATEGORIES: Category[] = ['top', 'bottom', 'outerwear', 'shoes', 'accessories'];
+
+/** 8 starter pieces — gets the builder working on first open. */
+export const STARTER_ITEMS: Omit<ClosetItem, 'id' | 'createdAt'>[] = [
+  { name: 'Ivory crew tee',         category: 'top',         color: '#F2EDE4', tone: 'warm',    archetypes: ['tonal', 'tailored', 'athleisure'], occasions: ['weekend', 'date', 'work'] },
+  { name: 'Black crew knit',        category: 'top',         color: '#0A0A0A', tone: 'neutral', archetypes: ['tailored', 'bold', 'tonal'],       occasions: ['date', 'formal', 'work'] },
+  { name: 'Bone linen shirt',       category: 'top',         color: '#E7DFCC', tone: 'warm',    archetypes: ['tonal', 'workwear'],               occasions: ['weekend', 'travel', 'date'] },
+  { name: 'Navy wool trouser',      category: 'bottom',      color: '#1F2A36', tone: 'cool',    archetypes: ['tailored', 'tonal'],               occasions: ['work', 'formal', 'date'] },
+  { name: 'Raw indigo denim',       category: 'bottom',      color: '#22354C', tone: 'cool',    archetypes: ['workwear', 'street', 'tonal'],      occasions: ['weekend', 'date', 'travel'] },
+  { name: 'Walnut leather boot',    category: 'shoes',       color: '#5C4A38', tone: 'warm',    archetypes: ['workwear', 'tonal', 'bold'],        occasions: ['weekend', 'travel', 'formal'] },
+  { name: 'Stone canvas jacket',    category: 'outerwear',   color: '#8E8174', tone: 'warm',    archetypes: ['workwear', 'tonal'],                occasions: ['weekend', 'travel'] },
+  { name: 'Bronze watch',           category: 'accessories', color: '#B08A5A', tone: 'warm',    archetypes: ['tonal', 'bold', 'tailored'],        occasions: ['work', 'date', 'formal', 'weekend'] },
+];
+
+export async function seedStarterCloset(): Promise<number> {
+  const existing = await listItems();
+  if (existing.length > 0) return 0;
+  for (const it of STARTER_ITEMS) await addItem(it);
+  return STARTER_ITEMS.length;
+}

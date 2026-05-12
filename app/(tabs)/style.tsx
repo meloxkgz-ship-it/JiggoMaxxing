@@ -22,6 +22,7 @@ import {
   listItems,
   Look,
   LOOKS,
+  seedStarterCloset,
 } from '@/lib/closet';
 import { useT } from '@/lib/i18n';
 
@@ -70,7 +71,7 @@ export default function StyleScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {tab === 'closet' ? (
-          <ClosetView items={items} onDelete={onDelete} />
+          <ClosetView items={items} onDelete={onDelete} onSeed={async () => setItems(await listItems())} />
         ) : (
           <>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
@@ -107,14 +108,25 @@ export default function StyleScreen() {
   );
 }
 
-function ClosetView({ items, onDelete }: { items: ClosetItem[]; onDelete: (i: ClosetItem) => void }) {
+function ClosetView({ items, onDelete, onSeed }: { items: ClosetItem[]; onDelete: (i: ClosetItem) => void; onSeed: () => Promise<void> }) {
   const t = useT();
+
   if (items.length === 0) {
     return (
       <View style={styles.empty}>
         <Ionicons name="shirt-outline" size={36} color={colors.bronze} />
-        <Text style={styles.emptyTitle}>{t('style.emptyCloset')}</Text>
-        <Text style={styles.emptyBody}>{t('style.emptyClosetBody')}</Text>
+        <Text style={styles.emptyTitle}>{t('style.seedTitle')}</Text>
+        <Text style={styles.emptyBody}>{t('style.seedBody')}</Text>
+        <Pressable
+          style={styles.seedCta}
+          onPress={async () => {
+            const n = await seedStarterCloset();
+            await onSeed();
+            Alert.alert(t('style.seedDone', { n }));
+          }}>
+          <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
+          <Text style={styles.seedCtaText}>{t('style.seedCta')}</Text>
+        </Pressable>
       </View>
     );
   }
@@ -209,8 +221,14 @@ const styles = StyleSheet.create({
   lookCopy: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13, lineHeight: 20, marginTop: 4 },
 
   empty: { paddingHorizontal: spacing.xl, paddingTop: spacing.xxxl, alignItems: 'center', gap: 8 },
-  emptyTitle: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 18, marginTop: spacing.md },
-  emptyBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13, textAlign: 'center' },
+  emptyTitle: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 18, marginTop: spacing.md, textAlign: 'center' },
+  emptyBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13, textAlign: 'center', paddingHorizontal: spacing.lg },
+  seedCta: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: spacing.xl, paddingVertical: 13, borderRadius: radius.pill,
+    backgroundColor: colors.bronze, marginTop: spacing.lg,
+  },
+  seedCtaText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 13, letterSpacing: 0.2 },
 
   fab: {
     position: 'absolute',

@@ -36,16 +36,10 @@ function hash(s: string): number {
   return h >>> 0;
 }
 
-const INSIGHTS = [
-  'Consistency in skin care will compound. Stay with the routine.',
-  'Posture is your highest-leverage habit this week.',
-  'Hydration shows up across multiple dimensions. Keep at 3 L.',
-  'Sleep is showing in your clarity scores. Protect 7+ hrs.',
-  'Frame work is paying off — keep the discipline.',
-  'Strength is steady; recovery is the unlock.',
-];
-
-export function computeScan(photoUri?: string): Omit<ScanResult, 'id' | 'createdAt'> {
+export function computeScan(
+  photoUri: string | undefined,
+  insights: string[],
+): Omit<ScanResult, 'id' | 'createdAt'> {
   const seed = hash((photoUri || 'no-photo') + ':' + Date.now().toString(36));
   const rand = mulberry32(seed);
   const dimensions: Record<string, number> = {};
@@ -56,7 +50,7 @@ export function computeScan(photoUri?: string): Omit<ScanResult, 'id' | 'created
     total += score;
   }
   const overall = Math.round(total / DIMENSIONS.length);
-  const insight = INSIGHTS[Math.floor(rand() * INSIGHTS.length)];
+  const insight = insights[Math.floor(rand() * insights.length)] ?? '';
   return { photoUri, dimensions, overall, insight };
 }
 

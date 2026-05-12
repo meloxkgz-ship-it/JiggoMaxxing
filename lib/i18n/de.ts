@@ -49,6 +49,10 @@ export default {
     evening: 'Guten Abend',
   },
   home: {
+    nudge: 'Edge des Tages',
+    nudgeDone: 'Heute erledigt',
+    nudgeMark: 'Als erledigt markieren',
+    nudgeStreak: '{n}-Tage-Streak',
     edgeIndex: 'Edge Index',
     edgeIndexEmpty: 'Nimm deinen ersten Scan auf, um eine private Basislinie zu setzen. Nichts verlässt dein Gerät.',
     capture: 'Aufnehmen',
@@ -120,6 +124,14 @@ export default {
     overall: 'Gesamter Edge Index',
     coachNote: 'Coach-Notiz',
     actions: 'Mikro-Aktionen',
+    insights: [
+      'Konsistenz in der Hautpflege summiert sich. Bleib bei der Routine.',
+      'Haltung ist diese Woche dein hebelstärkstes Habit.',
+      'Hydration zeigt sich in mehreren Dimensionen. Halt 3 L.',
+      'Schlaf taucht in den Clarity-Scores auf. Schütz 7+ Std.',
+      'Frame-Arbeit zahlt sich aus — halt die Disziplin.',
+      'Kraft ist stabil; Recovery ist der Unlock.',
+    ],
     micro: {
       skinLow: 'Sanften Cleanser zur Morgenroutine. Zwei Minuten.',
       skinMid: 'Retinol nur abends. An Peeling-Tagen weglassen.',
@@ -208,6 +220,11 @@ export default {
     itemName: 'Name',
     itemNamePlaceholder: 'Cremefarbenes Leinenhemd',
     suggested: 'Looks zum Nachbauen',
+    seedTitle: 'Quick-Start: 8 Essentials',
+    seedBody: 'Setze acht vielseitige Teile in den Schrank — der Builder funktioniert sofort. Du kannst alles später bearbeiten.',
+    seedCta: 'Essentials einfügen',
+    seedDone: '{n} Essentials hinzugefügt',
+    lookCopyTitle: 'So baust du den Look nach',
   },
   coach: {
     title: 'Coach',

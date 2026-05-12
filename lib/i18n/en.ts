@@ -49,6 +49,10 @@ export default {
     evening: 'Evening',
   },
   home: {
+    nudge: 'Daily edge',
+    nudgeDone: 'Done today',
+    nudgeMark: 'Mark done',
+    nudgeStreak: '{n}-day streak',
     edgeIndex: 'Edge Index',
     edgeIndexEmpty: 'Take your first scan to set a private baseline. Nothing leaves your device.',
     capture: 'Capture',
@@ -120,6 +124,14 @@ export default {
     overall: 'Overall edge index',
     coachNote: 'Coach note',
     actions: 'Micro-actions',
+    insights: [
+      'Consistency in skin care will compound. Stay with the routine.',
+      'Posture is your highest-leverage habit this week.',
+      'Hydration shows up across multiple dimensions. Keep at 3 L.',
+      'Sleep is showing in your clarity scores. Protect 7+ hrs.',
+      'Frame work is paying off — keep the discipline.',
+      'Strength is steady; recovery is the unlock.',
+    ],
     micro: {
       skinLow: 'Add a gentle cleanser to your AM routine. Two minutes.',
       skinMid: 'Keep retinol on PM only. Skip on days you exfoliate.',
@@ -208,6 +220,11 @@ export default {
     itemName: 'Name',
     itemNamePlaceholder: 'Cream linen shirt',
     suggested: 'Looks you can copy',
+    seedTitle: 'Quick start: 8 essentials',
+    seedBody: 'Seed your closet with eight versatile pieces so the builder works right away. You can edit anything later.',
+    seedCta: 'Seed essentials',
+    seedDone: 'Added {n} essentials',
+    lookCopyTitle: 'How to copy this look',
   },
   coach: {
     title: 'Coach',
