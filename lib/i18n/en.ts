@@ -228,6 +228,8 @@ export default {
       foggy: 'Foggy',
       low: 'Low',
       wired: 'Wired',
+      motivated: 'Motivated',
+      restless: 'Restless',
     },
     review: {
       title: 'Weekly review',

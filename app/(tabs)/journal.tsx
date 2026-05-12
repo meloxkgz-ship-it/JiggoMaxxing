@@ -20,11 +20,13 @@ import { deleteEntry, getStreak, listEntries, relativeDate } from '@/lib/journal
 import { JournalEntry } from '@/lib/types';
 
 const MOOD_COLORS: Record<string, string> = {
-  sharp: '#7E9E7A',
-  even:  '#B08A5A',
-  foggy: '#5C5C5A',
-  low:   '#B0584F',
-  wired: '#C6A16A',
+  sharp:     '#7E9E7A',
+  even:      '#B08A5A',
+  foggy:     '#5C5C5A',
+  low:       '#B0584F',
+  wired:     '#C6A16A',
+  motivated: '#8FA078',
+  restless:  '#7A6E92',
 };
 
 export default function JournalScreen() {

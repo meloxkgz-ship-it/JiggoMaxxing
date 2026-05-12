@@ -61,6 +61,10 @@ export default function OnboardingScreen() {
     const idx = STEPS.indexOf(step);
     if (idx < STEPS.length - 1) setStep(STEPS[idx + 1]);
   };
+  const back = () => {
+    const idx = STEPS.indexOf(step);
+    if (idx > 0) setStep(STEPS[idx - 1]);
+  };
 
   const toggleGoal = (g: typeof goals[number]) => {
     setGoals((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
@@ -94,6 +98,13 @@ export default function OnboardingScreen() {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <View style={styles.topRow}>
+              {STEPS.indexOf(step) > 0 ? (
+                <Pressable hitSlop={10} onPress={back} style={styles.backBtn}>
+                  <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
+                </Pressable>
+              ) : (
+                <View style={{ width: 24 }} />
+              )}
               <View style={styles.progress}>
                 {STEPS.map((s, i) => {
                   const idx = STEPS.indexOf(step);
@@ -310,6 +321,7 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg, gap: spacing.lg,
   },
+  backBtn: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   progress: { flexDirection: 'row', gap: 8, flex: 1 },
   progressDot: { flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.hairline },
   progressDotActive: { backgroundColor: colors.bronze },

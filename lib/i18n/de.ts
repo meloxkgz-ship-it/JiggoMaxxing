@@ -228,6 +228,8 @@ export default {
       foggy: 'Diffus',
       low: 'Niedrig',
       wired: 'Aufgedreht',
+      motivated: 'Motiviert',
+      restless: 'Unruhig',
     },
     review: {
       title: 'Wochenrückblick',

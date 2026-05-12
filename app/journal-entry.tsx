@@ -21,11 +21,13 @@ import { addEntry, todayKey } from '@/lib/journal';
 import { Mood } from '@/lib/types';
 
 const MOODS: { v: Mood; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { v: 'sharp', icon: 'flash-outline' },
-  { v: 'even',  icon: 'remove-outline' },
-  { v: 'foggy', icon: 'cloud-outline' },
-  { v: 'low',   icon: 'water-outline' },
-  { v: 'wired', icon: 'pulse-outline' },
+  { v: 'sharp',     icon: 'flash-outline' },
+  { v: 'even',      icon: 'remove-outline' },
+  { v: 'foggy',     icon: 'cloud-outline' },
+  { v: 'low',       icon: 'water-outline' },
+  { v: 'wired',     icon: 'pulse-outline' },
+  { v: 'motivated', icon: 'rocket-outline' },
+  { v: 'restless',  icon: 'shuffle-outline' },
 ];
 
 export default function JournalEntryScreen() {

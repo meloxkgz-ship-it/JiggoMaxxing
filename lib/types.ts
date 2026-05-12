@@ -1,5 +1,5 @@
 /** Shared model types. */
-export type Mood = 'sharp' | 'even' | 'foggy' | 'low' | 'wired';
+export type Mood = 'sharp' | 'even' | 'foggy' | 'low' | 'wired' | 'motivated' | 'restless';
 
 export type JournalEntry = {
   id: string;
