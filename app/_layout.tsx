@@ -13,6 +13,7 @@ import {
   Inter_700Bold,
   Inter_900Black,
 } from '@expo-google-fonts/inter';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { colors } from '@/constants/jiggo-theme';
 import { LanguageProvider } from '@/lib/i18n';
 import { getSettings } from '@/lib/settings';
@@ -81,6 +82,7 @@ export default function RootLayout() {
   if (!fontsLoaded || !bootstrapped) return null;
 
   return (
+    <ErrorBoundary>
     <LanguageProvider>
       <ThemeProvider value={JiggoDarkTheme}>
         <Stack
@@ -131,5 +133,6 @@ export default function RootLayout() {
         <StatusBar style="light" />
       </ThemeProvider>
     </LanguageProvider>
+    </ErrorBoundary>
   );
 }

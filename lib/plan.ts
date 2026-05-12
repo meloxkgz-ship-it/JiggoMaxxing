@@ -5,7 +5,7 @@ import { todayKey } from './journal';
 const KEY = 'plan.completion';
 const TEMPLATE_KEY = 'plan.template';
 
-export type PlanTemplate = 'foundations' | 'disciplined' | 'lean' | 'travel';
+export type PlanTemplate = 'foundations' | 'disciplined' | 'lean' | 'travel' | 'recovery' | 'cut';
 
 export const PLAN_TEMPLATES: Record<PlanTemplate, PlanItem[]> = {
   foundations: [
@@ -38,6 +38,22 @@ export const PLAN_TEMPLATES: Record<PlanTemplate, PlanItem[]> = {
     { id: 't3', time: '12:00', title: 'Hotel-room circuit',  category: 'Physique', duration: '15m' },
     { id: 't4', time: '20:00', title: 'Hydration check-in',  category: 'Physique', duration: '2m'  },
     { id: 't5', time: '22:00', title: 'PM skin barrier',     category: 'Grooming', duration: '4m'  },
+  ],
+  recovery: [
+    { id: 'r1', time: '07:30', title: 'Easy walk',           category: 'Physique', duration: '20m' },
+    { id: 'r2', time: '08:00', title: 'Skin: AM gentle',     category: 'Grooming', duration: '3m'  },
+    { id: 'r3', time: '13:00', title: 'Mobility flow',       category: 'Physique', duration: '12m' },
+    { id: 'r4', time: '17:00', title: 'Sauna or stretch',    category: 'Physique', duration: '20m' },
+    { id: 'r5', time: '21:00', title: 'PM skin barrier',     category: 'Grooming', duration: '6m'  },
+    { id: 'r6', time: '22:00', title: 'Lights down, no screens', category: 'Mind', duration: '0m' },
+  ],
+  cut: [
+    { id: 'c1', time: '06:30', title: 'Fasted walk',         category: 'Physique', duration: '30m' },
+    { id: 'c2', time: '07:30', title: 'AM hydration + SPF',  category: 'Grooming', duration: '4m'  },
+    { id: 'c3', time: '12:00', title: 'High-protein meal',   category: 'Physique', duration: '15m' },
+    { id: 'c4', time: '17:00', title: 'Compound lifts',      category: 'Physique', duration: '55m' },
+    { id: 'c5', time: '19:00', title: 'Low-carb evening',    category: 'Physique', duration: '10m' },
+    { id: 'c6', time: '21:00', title: 'PM skin · retinol',   category: 'Grooming', duration: '6m'  },
   ],
 };
 

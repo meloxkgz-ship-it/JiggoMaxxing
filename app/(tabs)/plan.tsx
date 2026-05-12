@@ -40,7 +40,7 @@ function lastNDates(n: number): string[] {
   return out;
 }
 
-const TEMPLATES: PlanTemplate[] = ['foundations', 'disciplined', 'lean', 'travel'];
+const TEMPLATES: PlanTemplate[] = ['foundations', 'disciplined', 'lean', 'travel', 'recovery', 'cut'];
 
 export default function PlanScreen() {
   const t = useT();

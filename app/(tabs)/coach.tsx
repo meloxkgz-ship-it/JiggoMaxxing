@@ -31,7 +31,7 @@ import { useT } from '@/lib/i18n';
 import { getApiKey } from '@/lib/settings';
 import { CoachTurn } from '@/lib/types';
 
-const TOPIC_KEYS = ['grooming', 'physique', 'style', 'confidence', 'discipline'] as const;
+const TOPIC_KEYS = ['grooming', 'physique', 'style', 'confidence', 'discipline', 'sleep', 'diet', 'focus', 'money', 'social'] as const;
 type TopicKey = typeof TOPIC_KEYS[number];
 
 const TOPIC_ICONS: Record<TopicKey, keyof typeof Ionicons.glyphMap> = {
@@ -40,6 +40,11 @@ const TOPIC_ICONS: Record<TopicKey, keyof typeof Ionicons.glyphMap> = {
   style: 'shirt-outline',
   confidence: 'flame-outline',
   discipline: 'compass-outline',
+  sleep: 'moon-outline',
+  diet: 'nutrition-outline',
+  focus: 'eye-outline',
+  money: 'cash-outline',
+  social: 'people-outline',
 };
 
 const SUGGESTION_KEYS = ['skinReset', 'posture', 'pushPull', 'style', 'restart'] as const;

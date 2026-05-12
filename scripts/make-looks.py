@@ -26,6 +26,19 @@ LOOKS = [
     ("l10", ["#7A3527", "#1F2A36", "#E7DFCC"]),
     ("l11", ["#0A0A0A", "#1C1C1C", "#B08A5A"]),
     ("l12", ["#22354C", "#1F2A36", "#FFFFFF"]),
+    # v3 expansion — 12 more curated palettes
+    ("l13", ["#0A0A0A", "#7A6A52", "#A89F8B"]),  # workwear evening
+    ("l14", ["#F2EDE4", "#A89F8B", "#5C4A38"]),  # off-white cream stack
+    ("l15", ["#1F2A36", "#3B5347", "#C7BDA7"]),  # navy + pine + bone
+    ("l16", ["#5C2D24", "#0A0A0A", "#E7DFCC"]),  # cognac + jet + cream
+    ("l17", ["#3B3A36", "#7A3527", "#0A0A0A"]),  # slate + rust formal
+    ("l18", ["#FFFFFF", "#0A0A0A", "#B08A5A"]),  # white + jet + bronze
+    ("l19", ["#26312B", "#7A6A52", "#0A0A0A"]),  # forest khaki
+    ("l20", ["#8E8174", "#1F2A36", "#F2EDE4"]),  # stone navy ivory
+    ("l21", ["#2E2A24", "#A89F8B", "#1C1C1C"]),  # espresso sand
+    ("l22", ["#C7BDA7", "#3B3A36", "#B08A5A"]),  # bone slate bronze
+    ("l23", ["#22354C", "#0A0A0A", "#5C4A38"]),  # indigo jet walnut
+    ("l24", ["#7A3527", "#26312B", "#F2EDE4"]),  # rust forest ivory
 ]
 
 
