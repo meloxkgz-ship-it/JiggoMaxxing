@@ -35,7 +35,9 @@ import { useT } from '@/lib/i18n';
 export default function ClosetAddScreen() {
   const t = useT();
   const params = useLocalSearchParams<{ id?: string }>();
-  const editId = params.id ?? null;
+  // Mirror plan-item-add: if the underlying item went missing between
+  // push and mount, drop edit mode so Save adds rather than silently no-ops.
+  const [editId, setEditId] = useState<string | null>(params.id ?? null);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Category>('top');
@@ -48,7 +50,10 @@ export default function ClosetAddScreen() {
     if (!editId) return;
     (async () => {
       const it = await getItem(editId);
-      if (!it) return;
+      if (!it) {
+        setEditId(null);
+        return;
+      }
       setPhotoUri(it.photoUri ?? null);
       setName(it.name);
       setCategory(it.category);

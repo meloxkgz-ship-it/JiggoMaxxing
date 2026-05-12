@@ -8,17 +8,25 @@ import { Eyebrow } from './Eyebrow';
 import { JMMark } from './JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 
-type State = { error: Error | null };
+type State = { error: Error | null; nonce: number };
 
 /**
  * Last-resort safety net for any render-time crash. Keeps the user in
  * the app, offers a copy-to-clipboard for the stack, and a 'reload'
- * (re-mounts the tree). Never reaches App Review's red-screen path.
+ * (force-remounts the children via a key bump). Never reaches App
+ * Review's red-screen path.
+ *
+ * Why nonce, not just `error:null`: clearing the error flag alone
+ * re-renders the same child instances with the same hooks/state. If
+ * the crash came from corrupt render-time state (e.g. malformed
+ * AsyncStorage), the child immediately throws again — we'd flicker in
+ * a loop. Bumping `nonce` and using it as a key on a wrapper forces a
+ * full remount so child components start fresh.
  */
 export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
-  state: State = { error: null };
+  state: State = { error: null, nonce: 0 };
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
@@ -28,7 +36,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   }
 
   reload = () => {
-    this.setState({ error: null });
+    this.setState((s) => ({ error: null, nonce: s.nonce + 1 }));
   };
 
   copyStack = async () => {
@@ -39,7 +47,10 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   };
 
   render() {
-    if (!this.state.error) return this.props.children;
+    if (!this.state.error) {
+      // Keying the wrapper means reload() actually remounts the tree.
+      return <View key={this.state.nonce} style={{ flex: 1 }}>{this.props.children}</View>;
+    }
     return (
       <SafeAreaView edges={['top']} style={styles.root}>
         <View style={styles.content}>

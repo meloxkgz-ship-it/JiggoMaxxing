@@ -26,7 +26,10 @@ const CATS: Cat[] = ['Grooming', 'Physique', 'Style', 'Mind'];
 export default function PlanItemAddScreen() {
   const t = useT();
   const params = useLocalSearchParams<{ id?: string }>();
-  const editId = params.id ?? null;
+  // `editId` may be cleared at runtime if we discover the item no longer
+  // exists — at that point the screen falls through to add-mode rather than
+  // silently no-oping on Save.
+  const [editId, setEditId] = useState<string | null>(params.id ?? null);
   const [title, setTitle] = useState('');
   const [hour, setHour] = useState('07');
   const [minute, setMinute] = useState('00');
@@ -38,7 +41,12 @@ export default function PlanItemAddScreen() {
     if (!editId) return;
     (async () => {
       const it = await getCustomItem(editId);
-      if (!it) return;
+      if (!it) {
+        // Item was deleted (or the id isn't a custom item). Drop edit mode
+        // instead of silently no-opping on save.
+        setEditId(null);
+        return;
+      }
       setTitle(it.title);
       const [h, m] = it.time.split(':');
       setHour(h ?? '07');

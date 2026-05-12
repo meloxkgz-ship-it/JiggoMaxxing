@@ -4,7 +4,7 @@
  * lands across the day, but rotates 365×5 unique.
  */
 import { getJSON, setJSON } from './storage';
-import { todayKey } from './journal';
+import { dateKey, todayKey } from './journal';
 import { tFor, Lang } from './i18n';
 
 const KEY = 'nudges.completion';
@@ -407,7 +407,7 @@ export async function canGraceToday(): Promise<boolean> {
   for (let i = 0; i < 7; i++) {
     const day = new Date(start);
     day.setDate(start.getDate() + i);
-    if (map[day.toISOString().slice(0, 10)]) return false;
+    if (map[dateKey(day)]) return false;
   }
   return true;
 }
@@ -428,7 +428,7 @@ export async function getNudgeStreak(): Promise<number> {
   let streak = 0;
   const d = new Date();
   for (;;) {
-    const key = d.toISOString().slice(0, 10);
+    const key = dateKey(d);
     if (map[key] || grace[key]) {
       streak++;
       d.setDate(d.getDate() - 1);

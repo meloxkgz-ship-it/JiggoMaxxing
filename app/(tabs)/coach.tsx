@@ -21,9 +21,9 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import {
-  appendTurn,
   clearHistory,
   listHistory,
+  saveHistory,
   sendToCoach,
   streamToCoach,
 } from '@/lib/coach';
@@ -61,6 +61,11 @@ export default function CoachScreen() {
   const [view, setView] = useState<'chat' | 'topics'>('chat');
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  // Synchronous guard for fast double-taps — flips before any await,
+  // unlike `busy` which is committed in a later render.
+  const inFlightRef = useRef(false);
+  // Aborts in-flight streams on navigate-away / clear-history / new send.
+  const abortRef = useRef<AbortController | null>(null);
 
   const copy = async (text: string, idx: number) => {
     await Clipboard.setStringAsync(text);
@@ -75,7 +80,19 @@ export default function CoachScreen() {
     setTurns(h);
   }, []);
 
-  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      // Aborts the in-flight stream when the user leaves /coach.
+      // Without this the SSE reader keeps writing state on an unmounted
+      // tree and persisting an assistant turn the user never saw.
+      return () => {
+        abortRef.current?.abort();
+        abortRef.current = null;
+        inFlightRef.current = false;
+      };
+    }, [refresh]),
+  );
 
   // Honor a primed prompt passed in via /coach?primed=...
   useEffect(() => {
@@ -88,57 +105,84 @@ export default function CoachScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.primed, hasKey]);
 
+  // Follow the streaming reply as it grows — without this dep the
+  // user has to scroll manually while text appears below the fold.
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
-  }, [turns.length, busy]);
+  }, [turns.length, busy, streaming]);
 
+  /**
+   * Core call. `history` is the full thread to send (including the optimistic
+   * user turn). Persists atomically: one `saveHistory(next)` write whether the
+   * stream succeeds, falls back to non-streaming, or aborts.
+   */
   const runCoach = async (history: CoachTurn[]) => {
+    const controller = new AbortController();
+    abortRef.current?.abort(); // cancel anything stale
+    abortRef.current = controller;
+    inFlightRef.current = true;
     setBusy(true);
     setStreaming('');
+    setError(null);
     try {
       let assembled = '';
       try {
-        assembled = await streamToCoach(history, (chunk) => {
-          assembled += chunk;
-          setStreaming(assembled);
-        });
-      } catch {
-        assembled = await sendToCoach(history);
+        assembled = await streamToCoach(
+          history,
+          (chunk) => {
+            if (controller.signal.aborted) return;
+            assembled += chunk;
+            setStreaming(assembled);
+          },
+          controller.signal,
+        );
+      } catch (streamErr: any) {
+        if (controller.signal.aborted) return;
+        // Stream hiccup → one retry without SSE
+        assembled = await sendToCoach(history, controller.signal);
       }
+      if (controller.signal.aborted) return;
+      if (!assembled.trim()) throw new Error(t('coach.error'));
       const aiTurn: CoachTurn = { role: 'assistant', content: assembled, ts: Date.now() };
       const next = [...history, aiTurn];
       setTurns(next);
       setStreaming(null);
-      // Persist by re-writing the full thread (overwrites; appendTurn would append again on regenerate)
-      const { clearHistory: _clear } = await import('@/lib/coach');
-      await _clear();
-      for (const trn of next) await appendTurn(trn);
+      await saveHistory(next);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e: any) {
+      if (controller.signal.aborted) return;
       setError(e?.message ?? t('coach.error'));
       setStreaming(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
+      inFlightRef.current = false;
       setBusy(false);
     }
   };
 
   const regenerate = async () => {
-    if (busy) return;
-    // Drop the last assistant turn (if any) and re-run with what's left
+    if (inFlightRef.current) return;
+    // Drop the last assistant turn (if any) and re-run with what's left.
+    // If the last turn is a user turn (e.g. previous send failed), retry as-is.
     const trimmedTurns = [...turns];
     while (trimmedTurns.length && trimmedTurns[trimmedTurns.length - 1].role === 'assistant') {
       trimmedTurns.pop();
     }
     if (trimmedTurns.length === 0) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setError(null);
     setTurns(trimmedTurns);
+    await saveHistory(trimmedTurns);
     await runCoach(trimmedTurns);
   };
 
   const send = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    // Synchronous guard — `busy` only flips after the next render,
+    // so a fast double-tap would otherwise pass and append twice.
+    if (!trimmed || inFlightRef.current) return;
+    inFlightRef.current = true;
     setError(null);
     setInput('');
     setView('chat');
@@ -146,38 +190,22 @@ export default function CoachScreen() {
     const userTurn: CoachTurn = { role: 'user', content: trimmed, ts: Date.now() };
     const optimistic = [...turns, userTurn];
     setTurns(optimistic);
-    await appendTurn(userTurn);
-    setBusy(true);
-    setStreaming('');
-    try {
-      let assembled = '';
-      try {
-        assembled = await streamToCoach(optimistic, (chunk) => {
-          assembled += chunk;
-          setStreaming(assembled);
-        });
-      } catch (streamErr) {
-        // Fallback to non-streaming on any streaming hiccup.
-        assembled = await sendToCoach(optimistic);
-      }
-      const aiTurn: CoachTurn = { role: 'assistant', content: assembled, ts: Date.now() };
-      const next = [...optimistic, aiTurn];
-      setTurns(next);
-      setStreaming(null);
-      await appendTurn(aiTurn);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    } catch (e: any) {
-      setError(e?.message ?? t('coach.error'));
-      setStreaming(null);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-    } finally {
-      setBusy(false);
-    }
+    await saveHistory(optimistic);
+    // runCoach manages its own busy/abort lifecycle from here.
+    inFlightRef.current = false;
+    await runCoach(optimistic);
   };
 
   const reset = async () => {
+    // Cancel any in-flight stream so it doesn't re-populate the just-cleared
+    // history when its setTurns/saveHistory finalize.
+    abortRef.current?.abort();
+    abortRef.current = null;
+    inFlightRef.current = false;
     await clearHistory();
     setTurns([]);
+    setStreaming(null);
+    setBusy(false);
     setError(null);
   };
 

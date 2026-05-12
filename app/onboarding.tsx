@@ -18,11 +18,6 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
-import {
-  requestPermission,
-  scheduleNudgeNotification,
-  setNotificationPref,
-} from '@/lib/notifications';
 import { seedStarterPlanFromGoals } from '@/lib/plan';
 import { saveSettings } from '@/lib/settings';
 

@@ -41,10 +41,14 @@ export default function JournalEntryScreen() {
   const save = async () => {
     if (saving) return;
     setSaving(true);
+    // parseFloat('.') / parseFloat('abc') return NaN — Number.isFinite gates
+    // it out so a bad input doesn't poison the sparkline + 7-day average.
+    const w = parseFloat(weight);
+    const s = parseFloat(sleep);
     await addEntry({
       date: todayKey(),
-      weightKg: weight ? parseFloat(weight) : undefined,
-      sleepHours: sleep ? parseFloat(sleep) : undefined,
+      weightKg: Number.isFinite(w) && w > 0 ? w : undefined,
+      sleepHours: Number.isFinite(s) && s >= 0 ? s : undefined,
       mood,
       notes: notes.trim(),
     });

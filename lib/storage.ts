@@ -8,6 +8,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NS = 'jiggo.v1.';
 
+/** Bump only when the on-disk shape changes in a way that requires migration. */
+export const SCHEMA_VERSION = 1;
+const SCHEMA_KEY = '__schema';
+
 export async function getJSON<T>(key: string, fallback: T): Promise<T> {
   try {
     const v = await AsyncStorage.getItem(NS + key);
@@ -49,9 +53,10 @@ export async function wipeAll(): Promise<void> {
 }
 
 /**
- * Replace every key under the JIGGO namespace with the contents of a
- * dump produced by `exportAll()`. Returns the count of keys written or
- * throws on parse failure.
+ * Replace every key under the JIGGO namespace with the contents of a dump
+ * produced by `exportAll()`. Validates the schema version *before* wiping —
+ * an unknown payload (wrong app, old build, hand-edited JSON) must not be
+ * able to destroy the user's data.
  */
 export async function importAll(json: string): Promise<number> {
   let parsed: unknown;
@@ -60,10 +65,21 @@ export async function importAll(json: string): Promise<number> {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error('Expected a JSON object at the top level.');
   }
+  const obj = parsed as Record<string, unknown>;
+  const schema = obj[SCHEMA_KEY];
+  if (typeof schema !== 'number') {
+    throw new Error('Missing schema version — not a JIGGO export.');
+  }
+  if (schema !== SCHEMA_VERSION) {
+    throw new Error(
+      `Schema v${schema} is not compatible with this build (v${SCHEMA_VERSION}).`,
+    );
+  }
+  // Validated — safe to wipe-and-replace.
   await wipeAll();
   let count = 0;
-  for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
-    if (typeof k !== 'string') continue;
+  for (const [k, v] of Object.entries(obj)) {
+    if (typeof k !== 'string' || k === SCHEMA_KEY) continue;
     try {
       await AsyncStorage.setItem(NS + k, JSON.stringify(v));
       count++;
@@ -72,12 +88,15 @@ export async function importAll(json: string): Promise<number> {
   return count;
 }
 
-/** Dump every key under the JIGGO namespace into a single JSON object. */
+/**
+ * Dump every key under the JIGGO namespace into a single JSON object.
+ * Stamps `__schema: SCHEMA_VERSION` so re-imports can validate compatibility.
+ */
 export async function exportAll(): Promise<Record<string, unknown>> {
   try {
     const all = await AsyncStorage.getAllKeys();
     const ours = all.filter((k) => k.startsWith(NS));
-    const out: Record<string, unknown> = {};
+    const out: Record<string, unknown> = { [SCHEMA_KEY]: SCHEMA_VERSION };
     for (const k of ours) {
       const v = await AsyncStorage.getItem(k);
       if (v == null) continue;
@@ -86,6 +105,6 @@ export async function exportAll(): Promise<Record<string, unknown>> {
     }
     return out;
   } catch {
-    return {};
+    return { [SCHEMA_KEY]: SCHEMA_VERSION };
   }
 }

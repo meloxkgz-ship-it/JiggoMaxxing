@@ -13,10 +13,16 @@ export const DIMENSIONS = [
 ] as const;
 
 /**
- * Deterministic local pseudo-scoring: the photo URI + timestamp seed a
- * PRNG that produces plausible scores per dimension. No upload, no ML —
- * this is the v1 honest on-device baseline. Future versions can swap in
- * an on-device CoreML model without changing the rest of the app.
+ * Deterministic local pseudo-scoring. The photo URI seeds a PRNG that
+ * produces plausible scores per dimension — *the same photo always
+ * produces the same reading*, so the user doesn't see different numbers
+ * when they re-scan the same shot moments apart. No upload, no ML — this
+ * is the v1 honest on-device baseline. Future versions can swap in an
+ * on-device CoreML model without changing the rest of the app.
+ *
+ * If no photo URI is available (camera race, picker edge case), we still
+ * produce a stable reading by seeding with the day-bucket so the user
+ * gets one consistent baseline per day instead of pure noise.
  */
 function mulberry32(seed: number) {
   return function () {
@@ -40,7 +46,10 @@ export function computeScan(
   photoUri: string | undefined,
   insights: string[],
 ): Omit<ScanResult, 'id' | 'createdAt'> {
-  const seed = hash((photoUri || 'no-photo') + ':' + Date.now().toString(36));
+  // Seed only on photoUri: deterministic per photo, stable on rescan.
+  // Fall back to a daily bucket when there is no photo URI.
+  const seedInput = photoUri || `no-photo:${new Date().toDateString()}`;
+  const seed = hash(seedInput);
   const rand = mulberry32(seed);
   const dimensions: Record<string, number> = {};
   let total = 0;

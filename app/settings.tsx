@@ -173,7 +173,15 @@ export default function SettingsScreen() {
             {LANGUAGES.map((l) => (
               <Pressable
                 key={l.code}
-                onPress={() => setLang(l.code)}
+                onPress={async () => {
+                  await setLang(l.code);
+                  // Re-schedule the daily nudge so the OS-level body switches
+                  // to the new language. Without this, the notification keeps
+                  // firing in the previous language until the user toggles it.
+                  if (notifPref.enabled) {
+                    try { await scheduleNudgeNotification(notifPref, l.code); } catch {}
+                  }
+                }}
                 style={[styles.seg, lang === l.code && styles.segActive]}>
                 <Text style={[styles.segText, lang === l.code && styles.segTextActive]}>
                   {l.native}
@@ -213,9 +221,15 @@ export default function SettingsScreen() {
               </ScrollView>
               <Pressable
                 style={styles.testNudge}
-                onPress={() => {
+                onPress={async () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-                  fireTestNudge(lang);
+                  const ok = await fireTestNudge(lang);
+                  if (!ok) {
+                    Alert.alert(
+                      t('settings.permissionNeeded'),
+                      t('settings.permissionBody'),
+                    );
+                  }
                 }}>
                 <Ionicons name="notifications-outline" size={14} color={colors.bronze} />
                 <Text style={styles.testNudgeText}>{t('settings.sendTest')}</Text>

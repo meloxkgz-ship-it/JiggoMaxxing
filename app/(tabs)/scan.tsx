@@ -69,6 +69,12 @@ export default function ScanScreen() {
           : await ImagePicker.launchImageLibraryAsync(opts);
       if (result.canceled) return;
       const uri = result.assets?.[0]?.uri;
+      // Defensive: picker can return non-canceled without an asset URI in
+      // rare device-race scenarios. Don't silently persist a fake scan.
+      if (!uri) {
+        Alert.alert(t('scan.title'), t('scan.permBody'));
+        return;
+      }
 
       setBusy(true);
       await new Promise((r) => setTimeout(r, 800));

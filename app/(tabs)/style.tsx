@@ -249,7 +249,10 @@ function SavedView({
               {new Date(s.savedAt).toLocaleDateString()} · {outfit?.items.length ?? '—'}
             </Text>
           </View>
-          <Text style={styles.savedScore}>{outfit?.overall ?? s.overall}</Text>
+          {/* Pin to the snapshot saved at outfit-creation. Recomputing via
+              expandSavedOutfit drifts as the closet changes (delete an item
+              and the same outfit suddenly scores lower with no explanation). */}
+          <Text style={styles.savedScore}>{s.overall}</Text>
         </Pressable>
       ))}
     </View>
@@ -258,8 +261,10 @@ function SavedView({
 
 function TodaysPickCard() {
   const t = useT();
-  // Deterministic per day-of-year so the pick is consistent through the day.
-  const day = Math.floor((Date.now() / 86400000));
+  // Deterministic per local-day so the pick rotates at local midnight, not
+  // UTC. `Date.now() / 86400000` would shift mid-afternoon for non-UTC users.
+  const d = new Date();
+  const day = Math.floor((d.getTime() - d.getTimezoneOffset() * 60_000) / 86_400_000);
   const look = LOOKS[day % LOOKS.length];
 
   return (

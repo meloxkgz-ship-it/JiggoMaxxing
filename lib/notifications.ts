@@ -60,11 +60,15 @@ export async function cancelNudgeNotification(): Promise<void> {
   await setJSON<string | null>(SCHEDULED_KEY, null);
 }
 
-/** Fire the daily nudge immediately for testing. Triggers a 1-second
- * delayed local notification — bypasses the daily schedule. */
-export async function fireTestNudge(lang: Lang): Promise<void> {
+/**
+ * Fire the daily nudge immediately for testing. Triggers a 2-second
+ * delayed local notification — bypasses the daily schedule.
+ * Returns `true` if scheduled, `false` if permission was denied so
+ * the caller can show a useful permission-needed alert.
+ */
+export async function fireTestNudge(lang: Lang): Promise<boolean> {
   const granted = await requestPermission();
-  if (!granted) return;
+  if (!granted) return false;
   const nudge = getTodayNudge(lang);
   await Notifications.scheduleNotificationAsync({
     content: {
@@ -77,6 +81,7 @@ export async function fireTestNudge(lang: Lang): Promise<void> {
       seconds: 2,
     } as Notifications.TimeIntervalTriggerInput,
   });
+  return true;
 }
 
 export async function scheduleNudgeNotification(

@@ -1,14 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { Stack, router, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useT } from '@/lib/i18n';
-import { getStreak, listEntries, todayKey } from '@/lib/journal';
+import { dateKey, getStreak, listEntries, todayKey } from '@/lib/journal';
 import { getActivePlan, getCompletion } from '@/lib/plan';
 import { getNudgeStreak } from '@/lib/nudge';
 import { listScans } from '@/lib/scan';
@@ -19,7 +19,7 @@ function lastNDates(n: number): string[] {
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    out.push(d.toISOString().slice(0, 10));
+    out.push(dateKey(d));
   }
   return out;
 }
@@ -34,56 +34,71 @@ export default function InsightsScreen() {
   const [topMood, setTopMood] = useState<string | null>(null);
   const [bestDim, setBestDim] = useState<{ name: string; v: number } | null>(null);
   const [weakDim, setWeakDim] = useState<{ name: string; v: number } | null>(null);
+  // Selection lives above the effect so refreshing on focus can clamp it.
+  const [selectedScanIdx, setSelectedScanIdx] = useState<number | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const [scList, jeList, ns, js, comp, plan] = await Promise.all([
-        listScans(),
-        listEntries(),
-        getNudgeStreak(),
-        getStreak(),
-        getCompletion(),
-        getActivePlan(),
-      ]);
-      setScans(scList);
-      setEntries(jeList);
-      setNudgeStreak(ns);
-      setJournalStreak(js);
-      const dates = lastNDates(28);
-      const total = Math.max(1, plan.length);
-      setPlanRatios(dates.map((d) => Math.min(1, (comp[d] ?? []).length / total)));
+  // Re-fetch on focus, not just on mount. Without this, deleting a scan from
+  // scan-detail leaves stale bars + a drill-down pointing at a missing id.
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      (async () => {
+        const [scList, jeList, ns, js, comp, plan] = await Promise.all([
+          listScans(),
+          listEntries(),
+          getNudgeStreak(),
+          getStreak(),
+          getCompletion(),
+          getActivePlan(),
+        ]);
+        if (!alive) return;
+        setScans(scList);
+        setEntries(jeList);
+        setNudgeStreak(ns);
+        setJournalStreak(js);
+        // Clamp drill-down so we don't reference a deleted scan after focus.
+        const visible = Math.min(scList.length, 10);
+        setSelectedScanIdx((idx) => (idx != null && idx < visible ? idx : null));
+        const dates = lastNDates(28);
+        const total = Math.max(1, plan.length);
+        setPlanRatios(dates.map((d) => Math.min(1, (comp[d] ?? []).length / total)));
 
-      // Top mood from last 30 entries
-      const counts: Record<string, number> = {};
-      for (const e of jeList.slice(0, 30)) {
-        if (e.mood) counts[e.mood] = (counts[e.mood] ?? 0) + 1;
-      }
-      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
-      setTopMood(top ?? null);
-
-      // Best/worst dimension across last 5 scans (averaged)
-      const dimAgg: Record<string, number[]> = {};
-      for (const s of scList.slice(0, 5)) {
-        for (const [k, v] of Object.entries(s.dimensions)) {
-          (dimAgg[k] ??= []).push(v);
+        // Top mood from last 30 entries
+        const counts: Record<string, number> = {};
+        for (const e of jeList.slice(0, 30)) {
+          if (e.mood) counts[e.mood] = (counts[e.mood] ?? 0) + 1;
         }
-      }
-      const avgs = Object.entries(dimAgg).map(([k, vs]) => ({
-        name: k,
-        v: Math.round(vs.reduce((a, b) => a + b, 0) / vs.length),
-      }));
-      if (avgs.length) {
-        avgs.sort((a, b) => b.v - a.v);
-        setBestDim(avgs[0]);
-        setWeakDim(avgs[avgs.length - 1]);
-      }
-    })();
-  }, []);
+        const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+        setTopMood(top ?? null);
+
+        // Best/worst dimension across last 5 scans (averaged)
+        const dimAgg: Record<string, number[]> = {};
+        for (const s of scList.slice(0, 5)) {
+          for (const [k, v] of Object.entries(s.dimensions)) {
+            (dimAgg[k] ??= []).push(v);
+          }
+        }
+        const avgs = Object.entries(dimAgg).map(([k, vs]) => ({
+          name: k,
+          v: Math.round(vs.reduce((a, b) => a + b, 0) / vs.length),
+        }));
+        if (avgs.length) {
+          avgs.sort((a, b) => b.v - a.v);
+          setBestDim(avgs[0]);
+          setWeakDim(avgs[avgs.length - 1]);
+        } else {
+          // No scans → drop stale dim cards.
+          setBestDim(null);
+          setWeakDim(null);
+        }
+      })();
+      return () => { alive = false; };
+    }, []),
+  );
 
   const recentScans = scans.slice(0, 10).reverse();
   const recentScores = recentScans.map((s) => s.overall);
   const last14Entries = lastNDates(14).map((d) => entries.filter((e) => e.date === d).length);
-  const [selectedScanIdx, setSelectedScanIdx] = useState<number | null>(null);
 
   return (
     <SafeAreaView edges={['top']} style={styles.root}>

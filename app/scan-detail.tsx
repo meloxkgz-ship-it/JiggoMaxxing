@@ -23,10 +23,15 @@ export default function ScanDetailScreen() {
   const t = useT();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [scan, setScan] = useState<ScanResult | null>(null);
+  const [allScans, setAllScans] = useState<ScanResult[]>([]);
 
+  // Single fetch — fold both reads into one effect so hook order is stable
+  // across renders and the early-return guard below doesn't trip
+  // "Rendered more hooks than during the previous render".
   useEffect(() => {
     (async () => {
       const all = await listScans();
+      setAllScans(all);
       setScan(all.find((s) => s.id === id) ?? null);
     })();
   }, [id]);
@@ -53,9 +58,6 @@ export default function ScanDetailScreen() {
       },
     ]);
   };
-
-  const [allScans, setAllScans] = useState<ScanResult[]>([]);
-  useEffect(() => { (async () => setAllScans(await listScans()))(); }, []);
 
   // Per-dimension trend across last 8 scans (oldest → newest)
   const dimTrend: Record<string, number[]> = {};

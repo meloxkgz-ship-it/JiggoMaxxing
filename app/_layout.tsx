@@ -67,16 +67,31 @@ export default function RootLayout() {
     }
   }, [navState?.key, onboarded, segments]);
 
-  // Tap on the daily-nudge notification → land on Home
+  // Tap on the daily-nudge notification → land on Home. We catch both:
+  // (a) the warm-launch case via `addNotificationResponseReceivedListener`,
+  //     fired only while the listener is attached.
+  // (b) the cold-launch case via `getLastNotificationResponseAsync`, which
+  //     returns the tap that *launched* the app — without this, a user who
+  //     tapped the nudge while the app was fully terminated would land on
+  //     a default tab with the notification silently dropped.
   useEffect(() => {
     if (!navState?.key) return;
+    let cancelled = false;
+    (async () => {
+      const last = await Notifications.getLastNotificationResponseAsync();
+      if (cancelled) return;
+      const data = last?.notification.request.content.data;
+      if (data?.kind === 'daily-nudge') {
+        router.replace('/(tabs)' as any);
+      }
+    })();
     const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
       const data = resp.notification.request.content.data;
       if (data?.kind === 'daily-nudge') {
         router.replace('/(tabs)' as any);
       }
     });
-    return () => sub.remove();
+    return () => { cancelled = true; sub.remove(); };
   }, [navState?.key]);
 
   if (!fontsLoaded || !bootstrapped) return null;

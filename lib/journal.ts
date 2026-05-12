@@ -36,8 +36,22 @@ export async function deleteEntry(id: string): Promise<void> {
   await setJSON(KEY, list.filter((e) => e.id !== id));
 }
 
+/**
+ * YYYY-MM-DD in the user's local time. Using ISO/UTC here causes an
+ * off-by-one for any user east or west of UTC: a journal saved at 23:30
+ * local would otherwise land on tomorrow's heat cell (or yesterday's) and
+ * break streak math at the day boundary.
+ */
 export function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return dateKey(new Date());
+}
+
+/** Format a Date as local YYYY-MM-DD. Exported for date-walk callers. */
+export function dateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 /** Compute consecutive-day streak ending today. */
@@ -48,7 +62,7 @@ export async function getStreak(): Promise<number> {
   let streak = 0;
   const d = new Date();
   for (;;) {
-    const key = d.toISOString().slice(0, 10);
+    const key = dateKey(d);
     if (dates.has(key)) {
       streak++;
       d.setDate(d.getDate() - 1);

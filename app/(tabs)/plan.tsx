@@ -9,7 +9,7 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useT } from '@/lib/i18n';
-import { todayKey } from '@/lib/journal';
+import { dateKey, todayKey } from '@/lib/journal';
 import {
   ActiveTemplateId,
   deleteCustomItem,
@@ -35,7 +35,7 @@ function lastNDates(n: number): string[] {
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    out.push(d.toISOString().slice(0, 10));
+    out.push(dateKey(d));
   }
   return out;
 }
@@ -280,7 +280,9 @@ export default function PlanScreen() {
                   key={i}
                   onPress={() => {
                     Haptics.selectionAsync().catch(() => {});
-                    const label = new Date(date).toLocaleDateString(undefined, {
+                    // `YYYY-MM-DD` alone parses as UTC midnight → off-by-one
+                    // for users west of UTC. Anchor at local midnight.
+                    const label = new Date(date + 'T00:00:00').toLocaleDateString(undefined, {
                       weekday: 'short', month: 'short', day: 'numeric',
                     });
                     Alert.alert(label, `${cnt} / ${items.length}`);

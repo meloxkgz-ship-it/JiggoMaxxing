@@ -73,10 +73,19 @@ export async function listUserTemplates(): Promise<UserTemplate[]> {
 
 export async function saveUserTemplate(name: string, items: PlanItem[]): Promise<UserTemplate> {
   const list = await listUserTemplates();
+  const tplId = `u_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`;
+  // Namespace item ids so a completion on this template doesn't bleed into
+  // any other template that happens to share an id (e.g. user template
+  // copied from `foundations` still has `f1`, completion map keyed by raw id
+  // would mark `f1` done on foundations too).
+  const namespaced: PlanItem[] = items.map((it) => ({
+    ...it,
+    id: `${tplId}::${it.id}`,
+  }));
   const tpl: UserTemplate = {
-    id: `u_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`,
+    id: tplId,
     name: name.trim() || 'Untitled',
-    items,
+    items: namespaced,
   };
   list.push(tpl);
   await setJSON(USER_TEMPLATES_KEY, list);

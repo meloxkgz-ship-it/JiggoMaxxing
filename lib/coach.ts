@@ -106,7 +106,10 @@ async function buildRequest(history: CoachTurn[], stream: boolean) {
   };
 }
 
-export async function sendToCoach(history: CoachTurn[]): Promise<string> {
+export async function sendToCoach(
+  history: CoachTurn[],
+  signal?: AbortSignal,
+): Promise<string> {
   const { apiKey, body } = await buildRequest(history, false);
   const res = await fetch(ENDPOINT, {
     method: 'POST',
@@ -117,6 +120,7 @@ export async function sendToCoach(history: CoachTurn[]): Promise<string> {
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body,
+    signal,
   });
 
   if (!res.ok) {
@@ -137,10 +141,13 @@ export async function sendToCoach(history: CoachTurn[]): Promise<string> {
 /**
  * Streaming version — emits text deltas as they arrive. Falls back to
  * non-streaming if the runtime doesn't support body.getReader().
+ * Pass an AbortSignal to cancel in-flight requests (e.g. on navigate-away
+ * or clear-history) — emits no further deltas after abort.
  */
 export async function streamToCoach(
   history: CoachTurn[],
   onDelta: (chunk: string) => void,
+  signal?: AbortSignal,
 ): Promise<string> {
   const { apiKey, body } = await buildRequest(history, true);
   const res = await fetch(ENDPOINT, {
@@ -152,6 +159,7 @@ export async function streamToCoach(
       'anthropic-dangerous-direct-browser-access': 'true',
     },
     body,
+    signal,
   });
 
   if (!res.ok) {
@@ -163,51 +171,74 @@ export async function streamToCoach(
   if (!reader) {
     // Fallback: read entire response, parse SSE post-hoc
     const text = await res.text();
-    const full = parseSSE(text, onDelta);
-    return full;
+    return parseSSE(text, onDelta, signal);
   }
 
   const decoder = new TextDecoder();
   let buffer = '';
   let assembled = '';
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() ?? '';
-    for (const line of lines) {
-      if (!line.startsWith('data: ')) continue;
-      const payload = line.slice(6).trim();
-      if (!payload || payload === '[DONE]') continue;
-      try {
-        const evt = JSON.parse(payload);
-        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-          const chunk = evt.delta.text as string;
-          assembled += chunk;
-          onDelta(chunk);
-        }
-      } catch {}
+  try {
+    while (true) {
+      if (signal?.aborted) break;
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      // SSE events are delimited by a blank line (\n\n or \r\n\r\n).
+      // Anything before the last blank line is a complete event.
+      const events = buffer.split(/\r?\n\r?\n/);
+      buffer = events.pop() ?? '';
+      for (const evt of events) {
+        if (signal?.aborted) break;
+        flushSSEEvent(evt, (chunk) => { assembled += chunk; onDelta(chunk); });
+      }
+    }
+    // Flush trailing buffer (handles servers that close without a final
+    // blank line). Decoder flush also handles a UTF-8 boundary split mid-glyph.
+    buffer += decoder.decode();
+    if (buffer.trim() && !signal?.aborted) {
+      flushSSEEvent(buffer, (chunk) => { assembled += chunk; onDelta(chunk); });
+    }
+  } finally {
+    try { reader.releaseLock?.(); } catch {}
+    if (signal?.aborted) {
+      try { await reader.cancel?.(); } catch {}
     }
   }
   return assembled.trim();
 }
 
-function parseSSE(raw: string, onDelta: (chunk: string) => void): string {
+/** Parse a single SSE event (may contain multiple `data:` lines per spec). */
+function flushSSEEvent(raw: string, onDelta: (chunk: string) => void): void {
+  const dataLines: string[] = [];
+  for (const line of raw.split(/\r?\n/)) {
+    // Accept both `data: ` and `data:` per SSE spec.
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice(line.startsWith('data: ') ? 6 : 5));
+    }
+  }
+  if (!dataLines.length) return;
+  const payload = dataLines.join('\n').trim();
+  if (!payload || payload === '[DONE]') return;
+  try {
+    const evt = JSON.parse(payload);
+    if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+      onDelta(evt.delta.text as string);
+    }
+  } catch {}
+}
+
+function parseSSE(raw: string, onDelta: (chunk: string) => void, signal?: AbortSignal): string {
   let assembled = '';
-  for (const line of raw.split('\n')) {
-    if (!line.startsWith('data: ')) continue;
-    const payload = line.slice(6).trim();
-    if (!payload || payload === '[DONE]') continue;
-    try {
-      const evt = JSON.parse(payload);
-      if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-        assembled += evt.delta.text;
-        onDelta(evt.delta.text);
-      }
-    } catch {}
+  for (const evt of raw.split(/\r?\n\r?\n/)) {
+    if (signal?.aborted) break;
+    flushSSEEvent(evt, (chunk) => { assembled += chunk; onDelta(chunk); });
   }
   return assembled.trim();
+}
+
+/** Atomically replace the persisted coach history. */
+export async function saveHistory(turns: CoachTurn[]): Promise<void> {
+  await setJSON(KEY, turns);
 }
 
 export const COACH_SUGGESTIONS = [
