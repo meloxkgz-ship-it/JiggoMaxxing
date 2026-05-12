@@ -68,9 +68,18 @@ export type CoachStream = {
 
 async function buildUserContext(): Promise<string> {
   const [settings, edge] = await Promise.all([getSettings(), computeEdge()]);
-  const name = settings.name ? `User name: ${settings.name}.` : '';
-  const goal = settings.goalKg ? ` Goal weight: ${settings.goalKg} kg.` : '';
-  return `${name}${goal} Current Edge breakdown — total ${edge.total}/100 (scan ${edge.scan}, journal-streak signal ${edge.journal}, nudge-streak signal ${edge.nudge}, plan-today ${edge.plan}). Use these only as background. Do not lecture about them. Do not turn them into a score-ranking.`.trim();
+  const parts: string[] = [];
+  if (settings.name) parts.push(`User name: ${settings.name}.`);
+  if (settings.goalKg) parts.push(`Goal weight: ${settings.goalKg} kg.`);
+  if (settings.goals?.length) parts.push(`Focus pillars: ${settings.goals.join(', ')}.`);
+  if (settings.experience) parts.push(`Self-described starting point: ${settings.experience}.`);
+  parts.push(
+    `Current Edge breakdown — total ${edge.total}/100 (scan ${edge.scan}, journal-streak signal ${edge.journal}, nudge-streak signal ${edge.nudge}, plan-today ${edge.plan}).`
+  );
+  parts.push(
+    'Use these only as background. Do not lecture about them. Do not turn them into a score-ranking.',
+  );
+  return parts.join(' ');
 }
 
 async function buildRequest(history: CoachTurn[], stream: boolean) {

@@ -355,11 +355,19 @@ const NUDGES: Record<Lang, Record<Theme, { title: string; body: string }[]>> = {
   },
 };
 
-export function getTodayNudge(lang: Lang): Nudge {
+/**
+ * Today's nudge. Rotates by day-of-year × theme.
+ * If `preferredThemes` is non-empty, the rotation is restricted to that
+ * subset — selected goals get a tighter feedback loop (one of your themes
+ * every day instead of one in five).
+ */
+export function getTodayNudge(lang: Lang, preferredThemes?: Theme[]): Nudge {
   const today = todayKey();
   const day = dayOfYear();
-  const themeIdx = day % THEMES.length;
-  const theme = THEMES[themeIdx];
+  const pool = preferredThemes && preferredThemes.length > 0
+    ? preferredThemes.filter((t) => THEMES.includes(t))
+    : THEMES;
+  const theme = pool[day % pool.length];
   const list = NUDGES[lang][theme];
   const item = list[day % list.length];
   return {

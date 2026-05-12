@@ -72,6 +72,58 @@ export async function deleteUserTemplate(id: string): Promise<void> {
   await setJSON(USER_TEMPLATES_KEY, list.filter((x) => x.id !== id));
 }
 
+/**
+ * Build a starter plan tailored to the user's selected onboarding goals.
+ * Pulls 1–2 items per selected goal from a curated bank and sorts by time.
+ * Saves it as a user template named (localised) "Your edge" and sets it active.
+ */
+const STARTER_BANK: Record<string, PlanItem[]> = {
+  grooming: [
+    { id: 'sg1', time: '07:00', title: 'Cold rinse · 30 sec',     category: 'Grooming', duration: '2m' },
+    { id: 'sg2', time: '07:30', title: 'AM skin + SPF',           category: 'Grooming', duration: '4m' },
+    { id: 'sg3', time: '21:00', title: 'PM skin · gentle',        category: 'Grooming', duration: '5m' },
+  ],
+  physique: [
+    { id: 'sp1', time: '12:30', title: 'Ten-minute walk',         category: 'Physique', duration: '10m' },
+    { id: 'sp2', time: '18:00', title: 'One set to discomfort',   category: 'Physique', duration: '15m' },
+    { id: 'sp3', time: '21:30', title: 'Hip flexor stretch',      category: 'Physique', duration: '3m' },
+  ],
+  style: [
+    { id: 'ss1', time: '21:45', title: 'Lay out tomorrow\'s fit', category: 'Style',    duration: '3m' },
+  ],
+  confidence: [
+    { id: 'sc1', time: '09:30', title: 'Posture: ribs over hips', category: 'Mind',     duration: '1m' },
+    { id: 'sc2', time: '14:00', title: 'Eye contact +1 second',   category: 'Mind',     duration: '0m' },
+  ],
+  discipline: [
+    { id: 'sd1', time: '06:45', title: 'Make the bed',            category: 'Mind',     duration: '1m' },
+    { id: 'sd2', time: '22:00', title: 'Phone in other room',     category: 'Mind',     duration: '0m' },
+  ],
+};
+
+export async function seedStarterPlanFromGoals(
+  goals: string[],
+  name: string,
+): Promise<UserTemplate | null> {
+  if (!goals.length) return null;
+  const collected: PlanItem[] = [];
+  const seen = new Set<string>();
+  for (const g of goals) {
+    const bank = STARTER_BANK[g];
+    if (!bank) continue;
+    for (const it of bank) {
+      if (seen.has(it.id)) continue;
+      seen.add(it.id);
+      collected.push({ ...it });
+    }
+  }
+  if (collected.length === 0) return null;
+  collected.sort((a, b) => a.time.localeCompare(b.time));
+  const tpl = await saveUserTemplate(name, collected);
+  await setActiveTemplate(tpl.id);
+  return tpl;
+}
+
 /** Active template can now be a built-in name or a user template id. */
 export type ActiveTemplateId = PlanTemplate | string; // string covers u_*
 

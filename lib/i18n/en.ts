@@ -130,6 +130,7 @@ export default {
     saveAsTemplatePh: 'My morning ritual',
     templateSaved: 'Template saved',
     deleteTemplate: 'Delete template?',
+    yourEdgeTemplate: 'Your edge',
     newItem: 'New item',
     itemTitle: 'Title',
     itemTitlePlaceholder: 'Stretch · 5 minutes',

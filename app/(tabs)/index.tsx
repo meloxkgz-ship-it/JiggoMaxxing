@@ -84,7 +84,7 @@ export default function HomeHubScreen() {
     setJournal(je);
     setPlan(pp);
     setPlanDone((pc[todayKey()] ?? []).length);
-    setNudge(getTodayNudge(lang));
+    setNudge(getTodayNudge(lang, (s.goals as any) ?? undefined));
     setNudgeDoneState(nd);
     setNudgeStreak(ns);
     setJournalStreak(js);

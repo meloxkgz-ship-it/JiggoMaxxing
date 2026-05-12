@@ -23,6 +23,7 @@ import {
   scheduleNudgeNotification,
   setNotificationPref,
 } from '@/lib/notifications';
+import { seedStarterPlanFromGoals } from '@/lib/plan';
 import { saveSettings } from '@/lib/settings';
 
 const STEPS = ['intro', 'pact', 'goals', 'experience', 'tour', 'profile'] as const;
@@ -73,6 +74,10 @@ export default function OnboardingScreen() {
       experience,
       hasOnboarded: true,
     });
+    // Seed a personalized plan from selected goals so Home isn't empty on first run.
+    if (goals.length > 0) {
+      await seedStarterPlanFromGoals(goals, t('plan.yourEdgeTemplate'));
+    }
     router.replace('/(tabs)' as any);
   };
 

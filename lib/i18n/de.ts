@@ -130,6 +130,7 @@ export default {
     saveAsTemplatePh: 'Mein Morgenritual',
     templateSaved: 'Vorlage gespeichert',
     deleteTemplate: 'Vorlage löschen?',
+    yourEdgeTemplate: 'Dein Edge',
     newItem: 'Neues Item',
     itemTitle: 'Titel',
     itemTitlePlaceholder: 'Dehnen · 5 Minuten',
