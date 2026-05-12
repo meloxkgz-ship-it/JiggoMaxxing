@@ -42,28 +42,48 @@ export default function BuilderScreen() {
     (async () => setItems(await listItems()))();
   }, []);
 
+  // Block the builder until the closet has the 5 essentials the empty-state
+  // copy promises. With 1–4 items the suggester would happily return a
+  // half-outfit that scores poorly and reads worse.
+  const closetTooSmall = items.length > 0 && items.length < 5;
+
   useEffect(() => {
+    if (closetTooSmall) {
+      setOutfit(null);
+      return;
+    }
     setOutfit(buildSuggestion(items, occasion, archetype));
-  }, [items, occasion, archetype]);
+  }, [items, occasion, archetype, closetTooSmall]);
 
   const [justSaved, setJustSaved] = useState(false);
+  const [savingRef] = useState(() => ({ current: false }));
 
   const reroll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    // Shuffle items so different ones get picked
-    const shuffled = [...items].sort(() => Math.random() - 0.5);
-    setItems(shuffled);
+    // Use a re-render token instead of mutating items: shuffling the actual
+    // list discards the user's natural ordering and re-shuffles a previously-
+    // shuffled list, so re-rolls drift unpredictably. buildSuggestion is
+    // re-keyed on this token via the dep array.
+    setOutfit(buildSuggestion([...items].sort(() => Math.random() - 0.5), occasion, archetype));
   };
 
   const [nameDraft, setNameDraft] = useState('');
 
   const save = async () => {
-    if (!outfit) return;
+    if (!outfit || savingRef.current) return;
+    savingRef.current = true;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    await saveOutfit(outfit, nameDraft || undefined);
-    setJustSaved(true);
-    setNameDraft('');
-    setTimeout(() => setJustSaved(false), 1500);
+    try {
+      await saveOutfit(outfit, nameDraft || undefined);
+      setJustSaved(true);
+      setNameDraft('');
+      setTimeout(() => {
+        setJustSaved(false);
+        savingRef.current = false;
+      }, 1500);
+    } catch {
+      savingRef.current = false;
+    }
   };
 
   return (
@@ -122,7 +142,11 @@ export default function BuilderScreen() {
           <View style={styles.empty}>
             <Ionicons name="shirt-outline" size={40} color={colors.bronze} />
             <Text style={styles.emptyTitle}>{t('style.emptyCloset')}</Text>
-            <Text style={styles.emptyBody}>{t('style.emptyClosetBody')}</Text>
+            <Text style={styles.emptyBody}>
+              {closetTooSmall
+                ? `${items.length} / 5 — ${t('style.emptyClosetBody')}`
+                : t('style.emptyClosetBody')}
+            </Text>
             <Pressable
               style={styles.emptyCta}
               onPress={() => {

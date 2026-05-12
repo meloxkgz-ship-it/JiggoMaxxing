@@ -20,8 +20,18 @@ export default function LookDetailScreen() {
   const look = LOOKS.find((l) => l.id === id);
 
   if (!look) {
+    // Keep the close affordance reachable even when the id is bad —
+    // Android modal presentation doesn't always support swipe-down to
+    // dismiss, so the chevron is the only guaranteed escape.
     return (
       <SafeAreaView edges={['top']} style={styles.root}>
+        <View style={styles.header}>
+          <Pressable hitSlop={10} onPress={() => router.back()}>
+            <Ionicons name="chevron-down" size={24} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{t('style.looks')}</Text>
+          <View style={{ width: 24 }} />
+        </View>
         <Text style={styles.miss}>—</Text>
       </SafeAreaView>
     );

@@ -92,10 +92,17 @@ export default function SettingsScreen() {
 
   const saveKey = async () => {
     setKeyStatus('saving');
-    await setApiKey(keyDraft.trim() || null);
-    setHasKey(!!keyDraft.trim());
-    setKeyStatus('saved');
-    setTimeout(() => setKeyStatus('idle'), 1200);
+    try {
+      await setApiKey(keyDraft.trim() || null);
+      setHasKey(!!keyDraft.trim());
+      setKeyStatus('saved');
+      setTimeout(() => setKeyStatus('idle'), 1200);
+    } catch (e: any) {
+      // SecureStore is unavailable on this device (rare). Surface the cause
+      // instead of leaving the user staring at a "saved ✓" that never fires.
+      setKeyStatus('idle');
+      Alert.alert(t('settings.coach'), e?.message ?? 'Could not save key.');
+    }
   };
 
   const resetCoach = () => {

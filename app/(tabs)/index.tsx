@@ -456,6 +456,43 @@ export default function HomeHubScreen() {
           </View>
         </View>
 
+        {/* Recent wins — positive-signal strip. Only renders when at least
+            one signal exists; we never show an empty box that would read as
+            "nothing has happened". Trajectory framing, not score framing. */}
+        {(() => {
+          const wins: { icon: keyof typeof Ionicons.glyphMap; text: string }[] = [];
+          if (planDone > 0) {
+            wins.push({ icon: 'checkmark-circle-outline', text: t('home.winsPlanDone', { n: planDone }) });
+          }
+          if (journal[0]?.date === todayKey()) {
+            wins.push({ icon: 'book-outline', text: t('home.winsJournalToday') });
+          }
+          if (nudgeStreak >= 3) {
+            wins.push({ icon: 'flame-outline', text: t('home.winsNudgeStreak', { n: nudgeStreak }) });
+          }
+          if (journalStreak >= 3) {
+            wins.push({ icon: 'pulse-outline', text: t('home.winsJournalStreak', { n: journalStreak }) });
+          }
+          if (scan && wins.length < 3) {
+            wins.push({ icon: 'sparkles-outline', text: t('home.winsLastScan', { n: scan.overall }) });
+          }
+          const top = wins.slice(0, 3);
+          if (top.length === 0) return null;
+          return (
+            <View style={styles.section}>
+              <Eyebrow>{t('home.winsTitle')}</Eyebrow>
+              <View style={styles.winsRow}>
+                {top.map((w, i) => (
+                  <View key={i} style={styles.winChip}>
+                    <Ionicons name={w.icon} size={14} color={colors.bronze} />
+                    <Text style={styles.winText}>{w.text}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          );
+        })()}
+
         {/* Quick actions */}
         <View style={styles.section}>
           <Eyebrow>{t('home.capture')}</Eyebrow>
@@ -813,6 +850,16 @@ const styles = StyleSheet.create({
   statTileLabel: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 4 },
 
   quickRow: { flexDirection: 'row', gap: spacing.md },
+
+  winsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  winChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(176,138,90,0.10)',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.28)',
+  },
+  winText: { color: colors.textPrimary, fontFamily: type.family.sansMedium, fontSize: 12, letterSpacing: 0.2 },
   quickCard: {
     flex: 1,
     padding: spacing.lg,

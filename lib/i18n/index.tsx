@@ -4,6 +4,7 @@
  */
 import * as Localization from 'expo-localization';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { View } from 'react-native';
 import { getJSON, setJSON } from '../storage';
 import en from './en';
 import de from './de';
@@ -23,12 +24,24 @@ function fmt(s: string, vars?: Record<string, string | number>): string {
   return s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`));
 }
 
+const warnedMissing = new Set<string>();
 export function tFor(lang: Lang, key: string, vars?: Record<string, string | number>): string {
   const v = lookup(dicts[lang], key);
   if (typeof v === 'string') return fmt(v, vars);
-  // fallback chain: en, then key
-  const en = lookup(dicts.en, key);
-  return typeof en === 'string' ? fmt(en, vars) : key;
+  // Fallback chain: en, then literal key.
+  const enValue = lookup(dicts.en, key);
+  if (typeof enValue === 'string') {
+    if (__DEV__ && lang !== 'en' && !warnedMissing.has(`${lang}:${key}`)) {
+      warnedMissing.add(`${lang}:${key}`);
+      console.warn(`[i18n] missing ${lang} key: ${key} (falling back to en)`);
+    }
+    return fmt(enValue, vars);
+  }
+  if (__DEV__ && !warnedMissing.has(key)) {
+    warnedMissing.add(key);
+    console.warn(`[i18n] missing key in both langs: ${key}`);
+  }
+  return key;
 }
 
 type Ctx = {
@@ -76,7 +89,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({ lang, setLang, t }), [lang, setLang, t]);
 
-  if (!hydrated) return null;
+  // Render an ink-colored View during hydrate instead of `null` so the
+  // splash → app handoff doesn't flash through a transparent/white frame.
+  if (!hydrated) {
+    return <View style={{ flex: 1, backgroundColor: '#080808' }} />;
+  }
   return (
     <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>
   );

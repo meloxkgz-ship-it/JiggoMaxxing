@@ -52,35 +52,55 @@ const KEY = 'closet';
 
 // ───────── Storage ─────────
 
+/**
+ * All closet mutations are serialised through a single in-memory promise
+ * chain. Without this, two concurrent callers (e.g. a fast double-tap on
+ * Save in the closet-add modal, or seedStarterCloset running while the user
+ * adds something manually) both read the same snapshot, both unshift their
+ * own item, and the second write silently drops the first.
+ */
+let writeChain: Promise<unknown> = Promise.resolve();
+function queueWrite<T>(run: () => Promise<T>): Promise<T> {
+  const next = writeChain.then(run, run);
+  writeChain = next.catch(() => undefined);
+  return next;
+}
+
 export async function listItems(): Promise<ClosetItem[]> {
   const list = await getJSON<ClosetItem[]>(KEY, []);
   return [...list].sort((a, b) => b.createdAt - a.createdAt);
 }
 
-export async function addItem(item: Omit<ClosetItem, 'id' | 'createdAt'>): Promise<ClosetItem> {
-  const list = await getJSON<ClosetItem[]>(KEY, []);
-  const next: ClosetItem = {
-    ...item,
-    id: `ci_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
-    createdAt: Date.now(),
-  };
-  list.unshift(next);
-  await setJSON(KEY, list);
-  return next;
-}
-
-export async function deleteItem(id: string): Promise<void> {
-  const list = await getJSON<ClosetItem[]>(KEY, []);
-  await setJSON(KEY, list.filter((i) => i.id !== id));
-}
-
-export async function updateItem(id: string, patch: Partial<ClosetItem>): Promise<void> {
-  const list = await getJSON<ClosetItem[]>(KEY, []);
-  const idx = list.findIndex((i) => i.id === id);
-  if (idx >= 0) {
-    list[idx] = { ...list[idx], ...patch };
+export function addItem(item: Omit<ClosetItem, 'id' | 'createdAt'>): Promise<ClosetItem> {
+  return queueWrite(async () => {
+    const list = await getJSON<ClosetItem[]>(KEY, []);
+    const next: ClosetItem = {
+      ...item,
+      id: `ci_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: Date.now(),
+    };
+    list.unshift(next);
     await setJSON(KEY, list);
-  }
+    return next;
+  });
+}
+
+export function deleteItem(id: string): Promise<void> {
+  return queueWrite(async () => {
+    const list = await getJSON<ClosetItem[]>(KEY, []);
+    await setJSON(KEY, list.filter((i) => i.id !== id));
+  });
+}
+
+export function updateItem(id: string, patch: Partial<ClosetItem>): Promise<void> {
+  return queueWrite(async () => {
+    const list = await getJSON<ClosetItem[]>(KEY, []);
+    const idx = list.findIndex((i) => i.id === id);
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...patch };
+      await setJSON(KEY, list);
+    }
+  });
 }
 
 export async function getItem(id: string): Promise<ClosetItem | null> {
