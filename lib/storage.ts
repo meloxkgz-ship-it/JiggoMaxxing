@@ -54,10 +54,19 @@ export async function wipeAll(): Promise<void> {
 
 /**
  * Replace every key under the JIGGO namespace with the contents of a dump
- * produced by `exportAll()`. Validates the schema version *before* wiping —
- * an unknown payload (wrong app, old build, hand-edited JSON) must not be
- * able to destroy the user's data.
+ * produced by `exportAll()`. Validates the schema *before* wiping — an
+ * unknown payload (wrong app, hand-edited JSON) must not be able to destroy
+ * the user's data.
+ *
+ * Accepts three shapes:
+ *  - `__schema: SCHEMA_VERSION` (current builds)
+ *  - `__schema: <older number>` — explicit reject with a clear message
+ *  - `__schema: undefined` and recognisably-JIGGO keys — treated as a v3.4
+ *    legacy export. Identified by the presence of at least one JIGGO domain
+ *    key (e.g. `scans`, `journal`, `closet`, `settings`). This keeps users
+ *    who exported on pre-v3.5 builds from finding their backups unusable.
  */
+const LEGACY_MARKER_KEYS = ['scans', 'journal', 'closet', 'settings', 'plan.template', 'coach.history'];
 export async function importAll(json: string): Promise<number> {
   let parsed: unknown;
   try { parsed = JSON.parse(json); }
@@ -67,13 +76,19 @@ export async function importAll(json: string): Promise<number> {
   }
   const obj = parsed as Record<string, unknown>;
   const schema = obj[SCHEMA_KEY];
-  if (typeof schema !== 'number') {
-    throw new Error('Missing schema version — not a JIGGO export.');
-  }
-  if (schema !== SCHEMA_VERSION) {
-    throw new Error(
-      `Schema v${schema} is not compatible with this build (v${SCHEMA_VERSION}).`,
-    );
+  if (typeof schema === 'number') {
+    if (schema !== SCHEMA_VERSION) {
+      throw new Error(
+        `Schema v${schema} is not compatible with this build (v${SCHEMA_VERSION}).`,
+      );
+    }
+  } else {
+    // No explicit schema. Accept only if the payload looks like a legacy
+    // JIGGO dump (has at least one of our domain keys).
+    const looksLikeJiggo = LEGACY_MARKER_KEYS.some((k) => k in obj);
+    if (!looksLikeJiggo) {
+      throw new Error('Unrecognised payload — not a JIGGO export.');
+    }
   }
   // Validated — safe to wipe-and-replace.
   await wipeAll();

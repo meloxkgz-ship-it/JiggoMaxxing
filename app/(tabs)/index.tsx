@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -65,6 +65,12 @@ export default function HomeHubScreen() {
   const [milestone, setMilestone] = useState<number | null>(null);
   const [graceAvail, setGraceAvail] = useState(false);
   const [showPushPrompt, setShowPushPrompt] = useState(false);
+  // Tracks the queued warm-push timeout so we can cancel on dismiss/unmount
+  // and avoid stacking duplicates across rapid focus + pull-to-refresh.
+  const pushPromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Once we've decided to show the prompt this session, suppress further
+  // schedules even before the persisted `pushAsked` flag round-trips.
+  const pushPromptScheduledRef = useRef(false);
 
   const reload = useCallback(async () => {
     const [s, sc, je, pc, pp, nd, ns, js, eb, ga] = await Promise.all([
@@ -91,30 +97,80 @@ export default function HomeHubScreen() {
     setEdge(eb);
     setGraceAvail(ga);
 
-    // Warm push permission ask: once, after the first Edge Index render.
-    if (!s.pushAsked && eb && eb.total > 0) {
+    // Warm push permission ask: once per session, after the first Edge Index
+    // render. The scheduled ref + timer-ref pair guards against pull-to-refresh
+    // queueing duplicates and against a stale timer firing AFTER dismiss but
+    // BEFORE the `pushAsked: true` write round-trips.
+    if (
+      !s.pushAsked &&
+      !pushPromptScheduledRef.current &&
+      eb &&
+      eb.total > 0
+    ) {
       const np = await getNotificationPref();
       if (!np.enabled) {
+        pushPromptScheduledRef.current = true;
         // Delay a beat so the home animations land first.
-        setTimeout(() => setShowPushPrompt(true), 900);
+        pushPromptTimerRef.current = setTimeout(() => {
+          pushPromptTimerRef.current = null;
+          setShowPushPrompt(true);
+        }, 900);
       }
     }
   }, [lang]);
 
+  // Clear any pending warm-push timer on unmount so it can't fire after
+  // navigation away (e.g. into onboarding via reset-all).
+  useEffect(() => {
+    return () => {
+      if (pushPromptTimerRef.current) {
+        clearTimeout(pushPromptTimerRef.current);
+        pushPromptTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // When the user switches language while Home is still focused, cached
+  // strings outside `t()` (the nudge title/body) stay in the previous
+  // language until a focus event. Re-pull on lang change.
+  useEffect(() => {
+    if (settings) reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
   const enablePush = async () => {
-    setShowPushPrompt(false);
+    // Persist optimistically + close before triggering the OS prompt so a
+    // racing reload can't queue a second modal in the meantime.
+    pushPromptScheduledRef.current = true;
+    if (pushPromptTimerRef.current) {
+      clearTimeout(pushPromptTimerRef.current);
+      pushPromptTimerRef.current = null;
+    }
     await persistSettings({ pushAsked: true });
+    setShowPushPrompt(false);
     const granted = await requestPermission();
     if (granted) {
       const pref = { enabled: true, hour: 9, minute: 0 };
       await setNotificationPref(pref);
       await scheduleNudgeNotification(pref, lang);
+    } else {
+      // OS denial — give the user a clear path back via Settings.
+      Alert.alert(
+        t('settings.permissionNeeded'),
+        t('settings.permissionBody'),
+      );
     }
   };
 
   const dismissPush = async () => {
-    setShowPushPrompt(false);
+    pushPromptScheduledRef.current = true;
+    if (pushPromptTimerRef.current) {
+      clearTimeout(pushPromptTimerRef.current);
+      pushPromptTimerRef.current = null;
+    }
+    // Persist FIRST so a racing reload won't re-read pushAsked=false.
     await persistSettings({ pushAsked: true });
+    setShowPushPrompt(false);
   };
 
   const useGrace = async () => {
@@ -350,7 +406,9 @@ export default function HomeHubScreen() {
                 <View
                   style={[
                     styles.progressFill,
-                    { width: `${(planDone / Math.max(1, plan.length)) * 100}%` },
+                    // Clamp to 100: a stale completion id from a previously
+                    // active template can push the count past plan.length.
+                    { width: `${Math.min(100, (planDone / Math.max(1, plan.length)) * 100)}%` },
                   ]}
                 />
               </View>

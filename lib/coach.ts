@@ -53,13 +53,6 @@ export async function clearHistory(): Promise<void> {
   await setJSON<CoachTurn[]>(KEY, []);
 }
 
-export async function appendTurn(turn: CoachTurn): Promise<CoachTurn[]> {
-  const list = await getJSON<CoachTurn[]>(KEY, []);
-  list.push(turn);
-  await setJSON(KEY, list);
-  return list;
-}
-
 export type CoachStream = {
   text: string;
   done: boolean;
@@ -207,7 +200,10 @@ export async function streamToCoach(
   return assembled.trim();
 }
 
-/** Parse a single SSE event (may contain multiple `data:` lines per spec). */
+/** Parse a single SSE event (may contain multiple `data:` lines per spec).
+ * Throws if the event is an Anthropic `error` payload so the caller surfaces
+ * the real upstream reason (overloaded, auth, rate-limit, etc.) instead of
+ * a generic empty-reply fallback. */
 function flushSSEEvent(raw: string, onDelta: (chunk: string) => void): void {
   const dataLines: string[] = [];
   for (const line of raw.split(/\r?\n/)) {
@@ -219,12 +215,20 @@ function flushSSEEvent(raw: string, onDelta: (chunk: string) => void): void {
   if (!dataLines.length) return;
   const payload = dataLines.join('\n').trim();
   if (!payload || payload === '[DONE]') return;
+  let evt: any;
   try {
-    const evt = JSON.parse(payload);
-    if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
-      onDelta(evt.delta.text as string);
-    }
-  } catch {}
+    evt = JSON.parse(payload);
+  } catch {
+    return;
+  }
+  if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+    onDelta(evt.delta.text as string);
+    return;
+  }
+  if (evt.type === 'error') {
+    const msg = evt.error?.message ?? evt.error?.type ?? 'Coach stream error';
+    throw new Error(msg);
+  }
 }
 
 function parseSSE(raw: string, onDelta: (chunk: string) => void, signal?: AbortSignal): string {
@@ -236,9 +240,18 @@ function parseSSE(raw: string, onDelta: (chunk: string) => void, signal?: AbortS
   return assembled.trim();
 }
 
-/** Atomically replace the persisted coach history. */
+/**
+ * Atomically replace the persisted coach history.
+ *
+ * Caps to the most recent {@link MAX_HISTORY} turns so a long-running
+ * user can't exceed AsyncStorage's per-key budget (~6 MB on iOS). Beyond
+ * that limit `setItem` throws and the persisted history would silently
+ * stop growing — the next request would then send a truncated thread.
+ */
+const MAX_HISTORY = 200;
 export async function saveHistory(turns: CoachTurn[]): Promise<void> {
-  await setJSON(KEY, turns);
+  const capped = turns.length > MAX_HISTORY ? turns.slice(-MAX_HISTORY) : turns;
+  await setJSON(KEY, capped);
 }
 
 export const COACH_SUGGESTIONS = [

@@ -31,6 +31,7 @@ import {
   updateItem,
 } from '@/lib/closet';
 import { useT } from '@/lib/i18n';
+import { persistPhoto } from '@/lib/photoStore';
 
 export default function ClosetAddScreen() {
   const t = useT();
@@ -75,7 +76,13 @@ export default function ClosetAddScreen() {
       source === 'camera'
         ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [3, 4], quality: 0.7 })
         : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [3, 4], quality: 0.7 });
-    if (!result.canceled) setPhotoUri(result.assets?.[0]?.uri ?? null);
+    if (!result.canceled) {
+      const raw = result.assets?.[0]?.uri ?? null;
+      if (!raw) return;
+      // Persist to documents/ so the thumbnail survives iOS clearing tmp/.
+      const persisted = await persistPhoto(raw, 'closet');
+      setPhotoUri(persisted);
+    }
   };
 
   const toggle = <T extends string>(arr: T[], setArr: (v: T[]) => void, v: T) => {

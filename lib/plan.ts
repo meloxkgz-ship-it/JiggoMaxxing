@@ -78,10 +78,16 @@ export async function saveUserTemplate(name: string, items: PlanItem[]): Promise
   // any other template that happens to share an id (e.g. user template
   // copied from `foundations` still has `f1`, completion map keyed by raw id
   // would mark `f1` done on foundations too).
-  const namespaced: PlanItem[] = items.map((it) => ({
-    ...it,
-    id: `${tplId}::${it.id}`,
-  }));
+  //
+  // If an item id is itself already namespaced (`u_<old>::orig`), strip the
+  // outer prefix before re-namespacing — otherwise a copy-of-copy stacks
+  // prefixes (`u_new::u_old::orig`), which is fine for isolation but a
+  // footgun for any future id-parser.
+  const namespaced: PlanItem[] = items.map((it) => {
+    const lastSep = it.id.lastIndexOf('::');
+    const baseId = lastSep >= 0 ? it.id.slice(lastSep + 2) : it.id;
+    return { ...it, id: `${tplId}::${baseId}` };
+  });
   const tpl: UserTemplate = {
     id: tplId,
     name: name.trim() || 'Untitled',

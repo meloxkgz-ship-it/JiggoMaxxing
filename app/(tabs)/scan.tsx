@@ -20,6 +20,7 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useLanguage, useT } from '@/lib/i18n';
+import { persistPhoto } from '@/lib/photoStore';
 import { computeScan, listScans, saveScan } from '@/lib/scan';
 import en from '@/lib/i18n/en';
 import de from '@/lib/i18n/de';
@@ -68,13 +69,16 @@ export default function ScanScreen() {
           ? await ImagePicker.launchCameraAsync(opts)
           : await ImagePicker.launchImageLibraryAsync(opts);
       if (result.canceled) return;
-      const uri = result.assets?.[0]?.uri;
+      const rawUri = result.assets?.[0]?.uri;
       // Defensive: picker can return non-canceled without an asset URI in
       // rare device-race scenarios. Don't silently persist a fake scan.
-      if (!uri) {
+      if (!rawUri) {
         Alert.alert(t('scan.title'), t('scan.permBody'));
         return;
       }
+      // Copy out of tmp/ before iOS sweeps it — otherwise the thumbnail
+      // disappears on the next cold launch.
+      const uri = await persistPhoto(rawUri, 'scans');
 
       setBusy(true);
       await new Promise((r) => setTimeout(r, 800));

@@ -66,6 +66,12 @@ export default function CoachScreen() {
   const inFlightRef = useRef(false);
   // Aborts in-flight streams on navigate-away / clear-history / new send.
   const abortRef = useRef<AbortController | null>(null);
+  // Tracks which `?primed=...` value we already consumed. Without this,
+  // `router.setParams({ primed: undefined })` does NOT actually remove
+  // the param in expo-router — it stringifies to "undefined" — so the
+  // effect would re-fire and send the literal text "undefined" to Claude
+  // on the next render or `hasKey` flip.
+  const consumedPrimedRef = useRef<string | null>(null);
 
   const copy = async (text: string, idx: number) => {
     await Clipboard.setStringAsync(text);
@@ -90,17 +96,29 @@ export default function CoachScreen() {
         abortRef.current?.abort();
         abortRef.current = null;
         inFlightRef.current = false;
+        // Defensive: ensure the next focus starts in a clean visual state,
+        // even if the aborted stream's `finally` hasn't yet committed.
+        setBusy(false);
+        setStreaming(null);
       };
     }, [refresh]),
   );
 
   // Honor a primed prompt passed in via /coach?primed=...
+  // Use a consumedRef instead of router.setParams because expo-router
+  // stringifies `undefined` → the param survives as the literal "undefined"
+  // and would re-fire on the next `hasKey` flip, sending "undefined" to Claude.
   useEffect(() => {
-    if (params.primed && hasKey === true && !busy) {
-      const text = String(params.primed);
-      // clear the param so it doesn't refire on navigation
-      router.setParams({ primed: undefined } as any);
-      send(text);
+    const rawParam = Array.isArray(params.primed) ? params.primed[0] : params.primed;
+    if (
+      rawParam &&
+      rawParam !== 'undefined' &&
+      consumedPrimedRef.current !== rawParam &&
+      hasKey === true &&
+      !inFlightRef.current
+    ) {
+      consumedPrimedRef.current = rawParam;
+      send(rawParam);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.primed, hasKey]);
@@ -170,10 +188,21 @@ export default function CoachScreen() {
       trimmedTurns.pop();
     }
     if (trimmedTurns.length === 0) return;
+    // Take the inFlight lock immediately so a navigate-away during the
+    // saveHistory await + a fast re-focus can't slip a second runCoach in.
+    inFlightRef.current = true;
+    setBusy(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     setError(null);
     setTurns(trimmedTurns);
-    await saveHistory(trimmedTurns);
+    try {
+      await saveHistory(trimmedTurns);
+    } catch (e) {
+      inFlightRef.current = false;
+      setBusy(false);
+      setError(t('coach.error'));
+      return;
+    }
     await runCoach(trimmedTurns);
   };
 
@@ -183,6 +212,9 @@ export default function CoachScreen() {
     // so a fast double-tap would otherwise pass and append twice.
     if (!trimmed || inFlightRef.current) return;
     inFlightRef.current = true;
+    // Flip `busy` synchronously so the send button visually disables on tap
+    // instead of lagging one render commit behind. runCoach re-sets it.
+    setBusy(true);
     setError(null);
     setInput('');
     setView('chat');
@@ -190,9 +222,18 @@ export default function CoachScreen() {
     const userTurn: CoachTurn = { role: 'user', content: trimmed, ts: Date.now() };
     const optimistic = [...turns, userTurn];
     setTurns(optimistic);
-    await saveHistory(optimistic);
-    // runCoach manages its own busy/abort lifecycle from here.
-    inFlightRef.current = false;
+    try {
+      await saveHistory(optimistic);
+    } catch (e) {
+      // AsyncStorage write failed (disk full, etc.) — release the lock and
+      // surface, otherwise inFlightRef stays true forever and every later
+      // send is silently dropped.
+      inFlightRef.current = false;
+      setBusy(false);
+      setError(t('coach.error'));
+      return;
+    }
+    // runCoach owns the inFlightRef lifecycle from here on.
     await runCoach(optimistic);
   };
 

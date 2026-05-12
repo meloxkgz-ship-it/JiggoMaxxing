@@ -364,11 +364,16 @@ const NUDGES: Record<Lang, Record<Theme, { title: string; body: string }[]>> = {
 export function getTodayNudge(lang: Lang, preferredThemes?: Theme[]): Nudge {
   const today = todayKey();
   const day = dayOfYear();
-  const pool = preferredThemes && preferredThemes.length > 0
+  // Filter the user's goals to known themes. If the filter empties the pool
+  // (corrupt import, a previously-supported theme was removed, etc.), fall
+  // back to all themes — otherwise `pool[day % 0]` is NaN and the downstream
+  // `NUDGES[lang][undefined]` lookup hard-crashes the Home screen.
+  let pool: Theme[] = preferredThemes && preferredThemes.length > 0
     ? preferredThemes.filter((t) => THEMES.includes(t))
     : THEMES;
+  if (pool.length === 0) pool = THEMES;
   const theme = pool[day % pool.length];
-  const list = NUDGES[lang][theme];
+  const list = NUDGES[lang][theme] ?? NUDGES[lang][THEMES[0]];
   const item = list[day % list.length];
   return {
     theme,
@@ -443,15 +448,31 @@ export const MILESTONES = [3, 7, 14, 30, 60, 100, 200, 365];
 /**
  * If the current streak hit a milestone we haven't celebrated yet,
  * return that milestone number and record it. Otherwise null.
+ *
+ * Returns the *lowest* unawarded milestone (not the highest reached). A user
+ * who jumps 6 → 14 in a session — e.g. via a grace day — would otherwise
+ * silently skip the 7-day milestone forever, because recording `lastCelebrated
+ * = 14` masks every earlier badge. Awarding the lowest unawarded means the
+ * next time they open the app they'll see 7, then 14 the time after, etc.
+ *
+ * Also self-heals if `lastCelebrated` ends up *higher* than the current streak
+ * (e.g. partial import or after a data reset that wiped the streak but not
+ * this key): snap `lastCelebrated` back to the highest milestone ≤ streak.
  */
 export async function consumeMilestone(streak: number): Promise<number | null> {
   if (streak <= 0) return null;
-  const lastCelebrated = await getJSON<number>(MILESTONE_KEY, 0);
-  // Find the highest reached milestone that's also > lastCelebrated
+  let lastCelebrated = await getJSON<number>(MILESTONE_KEY, 0);
   const reached = MILESTONES.filter((m) => m <= streak);
   if (reached.length === 0) return null;
-  const top = reached[reached.length - 1];
-  if (top <= lastCelebrated) return null;
-  await setJSON<number>(MILESTONE_KEY, top);
-  return top;
+  if (lastCelebrated > streak) {
+    // Heal: clamp to the highest reachable milestone so we don't permanently
+    // lock the user out of future celebrations.
+    lastCelebrated = reached[reached.length - 1];
+    await setJSON<number>(MILESTONE_KEY, lastCelebrated);
+    return null;
+  }
+  const next = reached.find((m) => m > lastCelebrated);
+  if (next == null) return null;
+  await setJSON<number>(MILESTONE_KEY, next);
+  return next;
 }
