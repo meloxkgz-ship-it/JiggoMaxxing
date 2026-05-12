@@ -5,6 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -149,6 +150,7 @@ export default function HomeHubScreen() {
 
         {/* Daily Edge Nudge */}
         {nudge && (
+          <Animated.View entering={FadeInDown.duration(420).delay(80)}>
           <Pressable
             onPress={toggleNudge}
             style={[styles.nudgeCard, nudgeDone && styles.nudgeCardDone]}>
@@ -178,10 +180,11 @@ export default function HomeHubScreen() {
               </View>
             </View>
           </Pressable>
+          </Animated.View>
         )}
 
         {/* Hero — edge index */}
-        <View style={styles.heroWrap}>
+        <Animated.View entering={FadeInDown.duration(420).delay(180)} style={styles.heroWrap}>
           <LinearGradient
             colors={['#1A1411', '#0E0B09', '#080606']}
             start={{ x: 0, y: 0 }}
@@ -221,7 +224,7 @@ export default function HomeHubScreen() {
               })}
             </View>
           </LinearGradient>
-        </View>
+        </Animated.View>
 
         {/* Today */}
         <View style={styles.section}>
