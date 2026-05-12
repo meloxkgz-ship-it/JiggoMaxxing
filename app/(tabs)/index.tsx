@@ -12,6 +12,7 @@ import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import * as Haptics from 'expo-haptics';
 
+import { computeEdge, EdgeBreakdown } from '@/lib/edge';
 import { useLanguage, useT } from '@/lib/i18n';
 import { getStreak, listEntries, todayKey } from '@/lib/journal';
 import { getActivePlan, getCompletion } from '@/lib/plan';
@@ -39,10 +40,11 @@ export default function HomeHubScreen() {
   const [nudgeDone, setNudgeDoneState] = useState(false);
   const [nudgeStreak, setNudgeStreak] = useState(0);
   const [journalStreak, setJournalStreak] = useState(0);
+  const [edge, setEdge] = useState<EdgeBreakdown | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const reload = useCallback(async () => {
-    const [s, sc, je, pc, pp, nd, ns, js] = await Promise.all([
+    const [s, sc, je, pc, pp, nd, ns, js, eb] = await Promise.all([
       getSettings(),
       listScans(),
       listEntries(),
@@ -51,6 +53,7 @@ export default function HomeHubScreen() {
       isNudgeDone(),
       getNudgeStreak(),
       getStreak(),
+      computeEdge(),
     ]);
     setSettings(s);
     setScan(sc[0] ?? null);
@@ -61,6 +64,7 @@ export default function HomeHubScreen() {
     setNudgeDoneState(nd);
     setNudgeStreak(ns);
     setJournalStreak(js);
+    setEdge(eb);
   }, [lang]);
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
@@ -87,14 +91,18 @@ export default function HomeHubScreen() {
     return name ? `${time}, ${name}.` : `${time}.`;
   })();
 
-  const overall = scan?.overall ?? null;
-  const pillarScores = scan
-    ? PILLARS.map((p, i) => {
-        // distribute around overall +/- 8 deterministically
-        const base = scan.overall;
-        const skews = [+4, -6, +8, -2];
-        return Math.max(35, Math.min(95, base + skews[i]));
-      })
+  const overall = edge?.total ?? null;
+  const pillarScores = edge
+    ? [
+        // grooming → tied to scan + journal
+        Math.round(edge.scan * 0.6 + edge.journal * 0.4),
+        // physique → tied to journal + plan
+        Math.round(edge.journal * 0.5 + edge.plan * 0.5),
+        // style → tied to scan + nudge
+        Math.round(edge.scan * 0.5 + edge.nudge * 0.5),
+        // confidence → tied to nudge + plan + journal
+        Math.round((edge.nudge + edge.plan + edge.journal) / 3),
+      ]
     : null;
 
   const lastJournal = journal[0];
