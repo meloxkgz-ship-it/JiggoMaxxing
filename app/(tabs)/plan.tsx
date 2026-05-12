@@ -101,6 +101,9 @@ export default function PlanScreen() {
           </ScrollView>
         </View>
 
+        {/* Next-up */}
+        <NextUpCard items={items} doneToday={doneToday} t={t} />
+
         <Card variant="elevated" style={{ gap: spacing.md }}>
           <View style={styles.weekHead}>
             <Eyebrow>{t('plan.thisWeek')}</Eyebrow>
@@ -172,6 +175,58 @@ export default function PlanScreen() {
   );
 }
 
+function NextUpCard({
+  items,
+  doneToday,
+  t,
+}: {
+  items: PlanItem[];
+  doneToday: string[];
+  t: (k: string, vars?: any) => string;
+}) {
+  const now = new Date();
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  const remaining = items
+    .filter((it) => !doneToday.includes(it.id))
+    .map((it) => {
+      const [h, m] = it.time.split(':').map(Number);
+      return { it, mins: h * 60 + m };
+    })
+    .filter((x) => x.mins >= minutesNow - 60)
+    .sort((a, b) => a.mins - b.mins);
+
+  const next = remaining[0];
+  if (!next) {
+    return (
+      <View style={styles.nextDone}>
+        <Ionicons name="checkmark-done" size={16} color={colors.positive} />
+        <Text style={styles.nextDoneText}>{t('plan.nextDoneToday')}</Text>
+      </View>
+    );
+  }
+
+  const diff = next.mins - minutesNow;
+  const when = diff <= 0
+    ? t('plan.nextNow')
+    : diff < 60
+      ? t('plan.nextM', { m: diff })
+      : t('plan.nextHM', { h: Math.floor(diff / 60), m: diff % 60 });
+
+  return (
+    <View style={styles.nextCard}>
+      <View style={{ flex: 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Ionicons name="time-outline" size={14} color={colors.bronze} />
+          <Text style={styles.nextLabel}>{t('plan.nextUp')}</Text>
+          <Text style={styles.nextWhen}>{diff <= 0 ? t('plan.nextNow') : t('plan.nextIn', { when })}</Text>
+        </View>
+        <Text style={styles.nextTitle}>{next.it.title}</Text>
+        <Text style={styles.nextMeta}>{next.it.time} · {next.it.category} · {next.it.duration}</Text>
+      </View>
+    </View>
+  );
+}
+
 function InsightLine({ icon, color, text }: {
   icon: keyof typeof import('@expo/vector-icons').Ionicons.glyphMap;
   color: string; text: string;
@@ -232,4 +287,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   insightText: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 12.5, flex: 1 },
+
+  nextCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.32)',
+    gap: 6,
+  },
+  nextLabel: { color: colors.bronze, fontFamily: type.family.sansSemi, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase' },
+  nextWhen: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.3, marginLeft: 'auto' },
+  nextTitle: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 17, letterSpacing: type.letterSpacing.tight, marginTop: 4 },
+  nextMeta: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12, marginTop: 2 },
+
+  nextDone: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    padding: spacing.md, borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(126,158,122,0.35)',
+    backgroundColor: 'rgba(126,158,122,0.06)',
+  },
+  nextDoneText: { color: colors.positive, fontFamily: type.family.sansMedium, fontSize: 13 },
 });

@@ -13,7 +13,7 @@ import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import * as Haptics from 'expo-haptics';
 
 import { useLanguage, useT } from '@/lib/i18n';
-import { listEntries, todayKey } from '@/lib/journal';
+import { getStreak, listEntries, todayKey } from '@/lib/journal';
 import { getActivePlan, getCompletion } from '@/lib/plan';
 import { getNudgeStreak, getTodayNudge, isNudgeDone, Nudge, setNudgeDone } from '@/lib/nudge';
 import { listScans } from '@/lib/scan';
@@ -38,10 +38,11 @@ export default function HomeHubScreen() {
   const [nudge, setNudge] = useState<Nudge | null>(null);
   const [nudgeDone, setNudgeDoneState] = useState(false);
   const [nudgeStreak, setNudgeStreak] = useState(0);
+  const [journalStreak, setJournalStreak] = useState(0);
 
   useFocusEffect(useCallback(() => {
     (async () => {
-      const [s, sc, je, pc, pp, nd, ns] = await Promise.all([
+      const [s, sc, je, pc, pp, nd, ns, js] = await Promise.all([
         getSettings(),
         listScans(),
         listEntries(),
@@ -49,6 +50,7 @@ export default function HomeHubScreen() {
         getActivePlan(),
         isNudgeDone(),
         getNudgeStreak(),
+        getStreak(),
       ]);
       setSettings(s);
       setScan(sc[0] ?? null);
@@ -58,6 +60,7 @@ export default function HomeHubScreen() {
       setNudge(getTodayNudge(lang));
       setNudgeDoneState(nd);
       setNudgeStreak(ns);
+      setJournalStreak(js);
     })();
   }, [lang]));
 
@@ -249,6 +252,41 @@ export default function HomeHubScreen() {
           </Card>
         </View>
 
+        {/* Stats overview */}
+        <View style={styles.section}>
+          <Eyebrow>{t('home.stats')}</Eyebrow>
+          <View style={styles.statsGrid}>
+            <StatTile
+              icon="sparkles"
+              label={t('home.statsNudge')}
+              value={nudgeStreak.toString()}
+              unit={t('home.statsDays')}
+              accent={nudgeStreak > 0}
+            />
+            <StatTile
+              icon="pulse"
+              label={t('home.statsJournal')}
+              value={journalStreak.toString()}
+              unit={t('home.statsDays')}
+              accent={journalStreak > 0}
+            />
+            <StatTile
+              icon="calendar"
+              label={t('home.statsPlan')}
+              value={`${planDone}/${plan.length || 1}`}
+              unit=""
+              accent={planDone > 0}
+            />
+            <StatTile
+              icon="scan"
+              label={t('home.statsScan')}
+              value={scan?.overall?.toString() ?? '—'}
+              unit={scan ? '/100' : ''}
+              accent={!!scan}
+            />
+          </View>
+        </View>
+
         {/* Quick actions */}
         <View style={styles.section}>
           <Eyebrow>{t('home.capture')}</Eyebrow>
@@ -320,6 +358,31 @@ export default function HomeHubScreen() {
         <View style={{ height: 120 }} />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function StatTile({
+  icon,
+  label,
+  value,
+  unit,
+  accent,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  unit: string;
+  accent: boolean;
+}) {
+  return (
+    <View style={[styles.statTile, accent && styles.statTileAccent]}>
+      <Ionicons name={icon} size={14} color={accent ? colors.bronze : colors.textTertiary} />
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2, marginTop: 4 }}>
+        <Text style={[styles.statTileValue, accent && styles.statTileValueAccent]}>{value}</Text>
+        {unit && <Text style={styles.statTileUnit}>{unit}</Text>}
+      </View>
+      <Text style={styles.statTileLabel}>{label}</Text>
+    </View>
   );
 }
 
@@ -529,6 +592,21 @@ const styles = StyleSheet.create({
   todayFooterText: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase' },
   progressTrack: { height: 3, backgroundColor: colors.hairline, borderRadius: 2, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: colors.bronze },
+
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  statTile: {
+    flexBasis: '47%', flexGrow: 1,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    gap: 2,
+  },
+  statTileAccent: { borderColor: 'rgba(176,138,90,0.32)', backgroundColor: colors.surfaceElevated },
+  statTileValue: { color: colors.textPrimary, fontFamily: type.family.sansBlack, fontSize: 22, letterSpacing: type.letterSpacing.tight },
+  statTileValueAccent: { color: colors.bronze },
+  statTileUnit: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11 },
+  statTileLabel: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 4 },
 
   quickRow: { flexDirection: 'row', gap: spacing.md },
   quickCard: {
