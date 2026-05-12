@@ -32,7 +32,7 @@ import { getDailyQuote } from '@/lib/quotes';
 import { getApiKey } from '@/lib/settings';
 import { CoachTurn } from '@/lib/types';
 
-const TOPIC_KEYS = ['grooming', 'physique', 'style', 'confidence', 'discipline', 'sleep', 'diet', 'focus', 'money', 'social'] as const;
+const TOPIC_KEYS = ['grooming', 'physique', 'style', 'confidence', 'discipline', 'sleep', 'diet', 'focus', 'money', 'social', 'stoic', 'recovery', 'purpose'] as const;
 type TopicKey = typeof TOPIC_KEYS[number];
 
 const TOPIC_ICONS: Record<TopicKey, keyof typeof Ionicons.glyphMap> = {
@@ -46,6 +46,9 @@ const TOPIC_ICONS: Record<TopicKey, keyof typeof Ionicons.glyphMap> = {
   focus: 'eye-outline',
   money: 'cash-outline',
   social: 'people-outline',
+  stoic: 'leaf-outline',
+  recovery: 'pulse-outline',
+  purpose: 'compass',
 };
 
 const SUGGESTION_KEYS = ['skinReset', 'posture', 'pushPull', 'style', 'restart'] as const;

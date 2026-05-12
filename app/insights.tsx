@@ -14,6 +14,18 @@ import { getNudgeStreak } from '@/lib/nudge';
 import { listScans } from '@/lib/scan';
 import { JournalEntry, ScanResult } from '@/lib/types';
 
+/** Mirror of journal.tsx MOOD_COLORS — kept local so insights doesn't
+ *  reach across screens, and so adding moods stays a one-line change. */
+const MOOD_COLORS: Record<string, string> = {
+  sharp:     '#7E9E7A',
+  even:      '#B08A5A',
+  foggy:     '#5C5C5A',
+  low:       '#B0584F',
+  wired:     '#C6A16A',
+  motivated: '#8FA078',
+  restless:  '#7A6E92',
+};
+
 function lastNDates(n: number): string[] {
   const out: string[] = [];
   for (let i = n - 1; i >= 0; i--) {
@@ -239,11 +251,21 @@ export default function InsightsScreen() {
           </>
         )}
 
-        {/* Top mood */}
+        {/* Top mood + 14-day mood ribbon — color stripe per day for a
+            calm, glanceable trajectory view. No numbers, just texture. */}
         {topMood && (
           <View style={styles.moodCard}>
             <Eyebrow>{t('home.insightsTopMood')}</Eyebrow>
             <Text style={styles.moodValue}>{t(`journal.moods.${topMood}` as any)}</Text>
+            <View style={styles.moodRibbon}>
+              {lastNDates(14).map((d) => {
+                const e = entries.find((x) => x.date === d);
+                const color = e?.mood
+                  ? (MOOD_COLORS[e.mood] ?? colors.surfaceMuted)
+                  : colors.surfaceMuted;
+                return <View key={d} style={[styles.moodRibbonCell, { backgroundColor: color }]} />;
+              })}
+            </View>
           </View>
         )}
 
@@ -376,6 +398,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   moodValue: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 20, letterSpacing: type.letterSpacing.tight, marginTop: 4 },
+  moodRibbon: { flexDirection: 'row', gap: 3, marginTop: spacing.md, height: 8 },
+  moodRibbonCell: { flex: 1, borderRadius: 2 },
 
   scanDetail: {
     marginTop: spacing.md, paddingTop: spacing.md,

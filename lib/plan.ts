@@ -5,7 +5,7 @@ import { todayKey } from './journal';
 const KEY = 'plan.completion';
 const TEMPLATE_KEY = 'plan.template';
 
-export type PlanTemplate = 'foundations' | 'disciplined' | 'lean' | 'travel' | 'recovery' | 'cut' | 'sundayReset' | 'focus';
+export type PlanTemplate = 'foundations' | 'disciplined' | 'lean' | 'travel' | 'recovery' | 'cut' | 'sundayReset' | 'focus' | 'stoic';
 
 export const PLAN_TEMPLATES: Record<PlanTemplate, PlanItem[]> = {
   foundations: [
@@ -71,6 +71,18 @@ export const PLAN_TEMPLATES: Record<PlanTemplate, PlanItem[]> = {
     { id: 'df5', time: '17:00', title: 'Short lift · 25m',             category: 'Physique', duration: '25m' },
     { id: 'df6', time: '21:00', title: 'Review the day · 3 lines',     category: 'Mind',     duration: '5m'  },
     { id: 'df7', time: '22:00', title: 'Phone in other room',          category: 'Mind',     duration: '0m'  },
+  ],
+  // Built from the Stoic morning / work / evening tradition. Marcus Aurelius
+  // started with "What's in my control today?"; finished with "What did I
+  // learn?". Same shape, modern actions.
+  stoic: [
+    { id: 'st1', time: '06:30', title: 'Premeditate · what could go wrong', category: 'Mind',     duration: '3m'  },
+    { id: 'st2', time: '06:45', title: 'Cold rinse · voluntary discomfort', category: 'Grooming', duration: '2m'  },
+    { id: 'st3', time: '07:00', title: 'One priority · written down',       category: 'Mind',     duration: '2m'  },
+    { id: 'st4', time: '13:00', title: 'Stillness · five breaths',          category: 'Mind',     duration: '2m'  },
+    { id: 'st5', time: '17:30', title: 'Train the body · 30m',              category: 'Physique', duration: '30m' },
+    { id: 'st6', time: '21:00', title: 'Evening review · what served you',  category: 'Mind',     duration: '8m'  },
+    { id: 'st7', time: '22:00', title: 'Lights down · phone away',          category: 'Mind',     duration: '0m'  },
   ],
 };
 
