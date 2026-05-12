@@ -14,6 +14,14 @@ import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import * as Haptics from 'expo-haptics';
 
 import { MilestoneCelebration } from '@/components/MilestoneCelebration';
+import { WarmPushPrompt } from '@/components/WarmPushPrompt';
+import {
+  getNotificationPref,
+  requestPermission,
+  scheduleNudgeNotification,
+  setNotificationPref,
+} from '@/lib/notifications';
+import { saveSettings as persistSettings } from '@/lib/settings';
 import { computeEdge, EdgeBreakdown } from '@/lib/edge';
 import { useLanguage, useT } from '@/lib/i18n';
 import { getStreak, listEntries, todayKey } from '@/lib/journal';
@@ -56,6 +64,7 @@ export default function HomeHubScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [milestone, setMilestone] = useState<number | null>(null);
   const [graceAvail, setGraceAvail] = useState(false);
+  const [showPushPrompt, setShowPushPrompt] = useState(false);
 
   const reload = useCallback(async () => {
     const [s, sc, je, pc, pp, nd, ns, js, eb, ga] = await Promise.all([
@@ -81,7 +90,32 @@ export default function HomeHubScreen() {
     setJournalStreak(js);
     setEdge(eb);
     setGraceAvail(ga);
+
+    // Warm push permission ask: once, after the first Edge Index render.
+    if (!s.pushAsked && eb && eb.total > 0) {
+      const np = await getNotificationPref();
+      if (!np.enabled) {
+        // Delay a beat so the home animations land first.
+        setTimeout(() => setShowPushPrompt(true), 900);
+      }
+    }
   }, [lang]);
+
+  const enablePush = async () => {
+    setShowPushPrompt(false);
+    await persistSettings({ pushAsked: true });
+    const granted = await requestPermission();
+    if (granted) {
+      const pref = { enabled: true, hour: 9, minute: 0 };
+      await setNotificationPref(pref);
+      await scheduleNudgeNotification(pref, lang);
+    }
+  };
+
+  const dismissPush = async () => {
+    setShowPushPrompt(false);
+    await persistSettings({ pushAsked: true });
+  };
 
   const useGrace = async () => {
     const ok = await graceToday();
@@ -148,6 +182,7 @@ export default function HomeHubScreen() {
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
       <MilestoneCelebration milestone={milestone} onDismiss={() => setMilestone(null)} />
+      <WarmPushPrompt visible={showPushPrompt} onEnable={enablePush} onLater={dismissPush} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}

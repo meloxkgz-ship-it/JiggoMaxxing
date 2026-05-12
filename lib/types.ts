@@ -42,10 +42,15 @@ export type CoachTurn = {
   ts: number;
 };
 
+export type Goal = 'grooming' | 'physique' | 'style' | 'confidence' | 'discipline';
+
 export type Settings = {
   name?: string;
   goalKg?: number;
+  goals?: Goal[];           // selected during onboarding — drives personalization
+  experience?: 'beginner' | 'returning' | 'advanced';
+  pushAsked?: boolean;      // warm push prompt has been shown
   units: 'metric' | 'imperial';
-  apiKey?: string; // stored in expo-secure-store, mirrored flag here
+  apiKey?: string;
   hasOnboarded: boolean;
 };

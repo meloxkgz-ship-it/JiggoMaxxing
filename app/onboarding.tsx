@@ -25,8 +25,18 @@ import {
 } from '@/lib/notifications';
 import { saveSettings } from '@/lib/settings';
 
-const STEPS = ['intro', 'pact', 'tour', 'notify', 'profile'] as const;
+const STEPS = ['intro', 'pact', 'goals', 'experience', 'tour', 'profile'] as const;
 type Step = typeof STEPS[number];
+
+const GOALS: { v: 'grooming' | 'physique' | 'style' | 'confidence' | 'discipline'; icon: any }[] = [
+  { v: 'grooming',   icon: 'water-outline' },
+  { v: 'physique',   icon: 'barbell-outline' },
+  { v: 'style',      icon: 'shirt-outline' },
+  { v: 'confidence', icon: 'flame-outline' },
+  { v: 'discipline', icon: 'compass-outline' },
+];
+
+const EXP: ('beginner' | 'returning' | 'advanced')[] = ['beginner', 'returning', 'advanced'];
 
 const TOUR_ITEMS = [
   { k: 'Home',    icon: 'grid-outline'     as const, key: 'tourHome' },
@@ -43,16 +53,24 @@ export default function OnboardingScreen() {
   const [step, setStep] = useState<Step>('intro');
   const [name, setName] = useState('');
   const [goal, setGoal] = useState('');
+  const [goals, setGoals] = useState<('grooming'|'physique'|'style'|'confidence'|'discipline')[]>([]);
+  const [experience, setExperience] = useState<'beginner'|'returning'|'advanced'>('beginner');
 
   const next = () => {
     const idx = STEPS.indexOf(step);
     if (idx < STEPS.length - 1) setStep(STEPS[idx + 1]);
   };
 
+  const toggleGoal = (g: typeof goals[number]) => {
+    setGoals((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
+  };
+
   const finish = async () => {
     await saveSettings({
       name: name.trim() || undefined,
       goalKg: goal ? parseFloat(goal) : undefined,
+      goals: goals.length ? goals : undefined,
+      experience,
       hasOnboarded: true,
     });
     router.replace('/(tabs)' as any);
@@ -154,27 +172,63 @@ export default function OnboardingScreen() {
               </>
             )}
 
-            {step === 'notify' && (
+            {step === 'goals' && (
               <>
-                <Eyebrow>{t('home.nudge')}</Eyebrow>
-                <Text style={styles.title}>{t('onboarding.notifyTitle')}</Text>
-                <Text style={styles.body}>{t('onboarding.notifyBody')}</Text>
+                <Eyebrow>{t('onboarding.tour')}</Eyebrow>
+                <Text style={styles.title}>{t('onboarding.goalsTitle')}</Text>
+                <Text style={styles.body}>{t('onboarding.goalsBody')}</Text>
+                <View style={styles.tourGrid}>
+                  {GOALS.map((g) => {
+                    const on = goals.includes(g.v);
+                    return (
+                      <Pressable
+                        key={g.v}
+                        onPress={() => toggleGoal(g.v)}
+                        style={[styles.tourCard, on && styles.goalCardOn]}>
+                        <View style={styles.tourIcon}>
+                          <Ionicons name={g.icon} size={18} color={on ? colors.textOnBronze : colors.bronze} />
+                        </View>
+                        <Text style={[styles.tourTitle, on && { color: colors.textOnBronze }]}>
+                          {t(`coach.topicCards.${g.v}.title`)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
                 <Pressable
-                  style={styles.cta}
-                  onPress={async () => {
-                    const granted = await requestPermission();
-                    if (granted) {
-                      const pref = { enabled: true, hour: 9, minute: 0 };
-                      await setNotificationPref(pref);
-                      await scheduleNudgeNotification(pref, lang);
-                    }
-                    next();
-                  }}>
-                  <Ionicons name="notifications-outline" size={16} color={colors.textOnBronze} />
-                  <Text style={styles.ctaText}>{t('onboarding.notifyEnable')}</Text>
+                  style={[styles.cta, goals.length === 0 && { opacity: 0.5 }]}
+                  disabled={goals.length === 0}
+                  onPress={next}>
+                  <Text style={styles.ctaText}>{t('common.continue')}</Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
                 </Pressable>
-                <Pressable onPress={next}>
-                  <Text style={styles.skip}>{t('onboarding.notifyLater')}</Text>
+              </>
+            )}
+
+            {step === 'experience' && (
+              <>
+                <Eyebrow>{t('common.private')}</Eyebrow>
+                <Text style={styles.title}>{t('onboarding.experienceTitle')}</Text>
+                <Text style={styles.body}>{t('onboarding.experienceBody')}</Text>
+                <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
+                  {EXP.map((e) => {
+                    const on = experience === e;
+                    return (
+                      <Pressable
+                        key={e}
+                        onPress={() => setExperience(e)}
+                        style={[styles.expRow, on && styles.expRowOn]}>
+                        <Text style={[styles.expText, on && { color: colors.textOnBronze }]}>
+                          {t(`onboarding.exp${e[0].toUpperCase()}${e.slice(1)}` as any)}
+                        </Text>
+                        {on && <Ionicons name="checkmark" size={18} color={colors.textOnBronze} />}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                <Pressable style={styles.cta} onPress={next}>
+                  <Text style={styles.ctaText}>{t('common.continue')}</Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
                 </Pressable>
               </>
             )}
@@ -292,6 +346,15 @@ const styles = StyleSheet.create({
   },
   tourTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13 },
   tourBody: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 11.5, lineHeight: 17 },
+  goalCardOn: { backgroundColor: colors.bronze, borderColor: colors.bronze },
+  expRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: spacing.lg, borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    backgroundColor: colors.surface,
+  },
+  expRowOn: { backgroundColor: colors.bronze, borderColor: colors.bronze },
+  expText: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14 },
 
   pactList: { gap: spacing.sm, marginTop: spacing.lg },
   pactRow: {

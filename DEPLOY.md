@@ -45,11 +45,30 @@ asc apps set-categories <appId> --primary HEALTH_AND_FITNESS --secondary LIFESTY
 asc metadata pull --bundle-id com.jiggo.maxxing
 ```
 
-Then ASO-friendly name + keywords. Suggested:
-- **Name:** `JIGGO MAXXING: Edge Coach`
-- **Subtitle:** `Grooming, physique, style, calm.`
-- **Keywords:** `looksmaxxing,grooming,style,confidence,coach,habit,journal,wellness,routine,men`
-- **Primary cat:** Health & Fitness · **Secondary:** Lifestyle
+**Research-backed ASO (May 2026):**
+
+Apple is not flagging the word *looksmaxxing* itself — rating/PSL/before-after imagery is what triggers 1.1/4.3 clusters. Keep the term out of *visible* metadata, capture its traffic in the hidden keyword field only.
+
+- **Title (30 char max):** `JIGGO: Men's Edge Coach` (22)
+- **Subtitle (30 char max):** `Discipline, Habits, Routine` (27)
+- **Keywords (100 char, no dupes from title/subtitle):**
+  `looksmax,grooming,self,improvement,glowup,style,physique,confidence,daily,tracker,routine`
+- **Primary category:** Health & Fitness · **Secondary:** Lifestyle
+
+**DE store listing:**
+- **Title:** `JIGGO: Edge Coach für Männer`
+- **Subtitle:** `Disziplin · Routine · Stil`
+
+**First three lines of the description** (anchors anti-toxic positioning):
+> JIGGO is the men's edge coach without the toxic playbook. No PSL scores. No before/after. No "looksmax tier." Just a private, on-device coach for grooming, physique, style, confidence, and discipline.
+
+**Screenshot captions** (top of frame, 6 screenshots):
+1. "No ratings. No comparisons. Just your edge."
+2. "Twelve curated looks. Build your own."
+3. "Six private dimensions. Local only."
+4. "Switch your plan to fit the week."
+5. "A coach with limits. Insight, never judgement."
+6. "All your data. On your device."
 
 ## 4) Privacy policy URL
 
@@ -81,24 +100,25 @@ Min 3 screenshots; recommend 6:
 5. Coach in conversation
 6. Insights
 
-## 6) Commerce model — DECIDE BEFORE METADATA
+## 6) Commerce model — research-backed ladder
 
-Coach currently uses **bring-your-own Anthropic API key** (stored in Keychain). Apple may treat this as:
-- (a) acceptable — same as Things/Bear allowing local-only — BUT
-- (b) risky — "third-party AI service" with no IAP
+Research from Adapty, RevenueCat 2025, Cal AI Superwall case study:
+- **Hard onboarding paywall** earns ~$3.09 RPI by D14 vs $0.38 for soft (8x).
+- **Onboarding placement** drives 60–80 % of subscription revenue.
+- **Free trial + weekly** converts trial-to-paid at 39.9 % median (H&F vertical), top decile 68 %.
+- **Annual at ~3.8x weekly price** anchors well: $39.99/yr against $4.99/wk = "Save 80 %".
 
-Two paths:
+**Recommended ladder** (shown as screen 7 after onboarding's 6 personalization screens):
+1. **7-day free trial → $4.99/wk** — default highlighted CTA
+2. **$39.99/yr** with `Save 80 %` badge
+3. **BYO Anthropic key** — tiny tertiary link beneath: *"I have my own Anthropic key — unlock Coach without subscribing"*. Keeps brand-honest stance; doesn't cannibalize because power users self-select and aren't the median LTV target anyway.
 
-### Path A — Stay BYO-key (simpler, niche)
-Mention "your own API key" in description + screenshot. App is free, no IAP.
+**Implementation path** (~2–3 days):
+- `expo-iap` or native StoreKit 2 bridge
+- Anthropic proxy: Cloudflare Worker / Vercel Function with per-user rate limit (e.g. 60 turns/day, 200/week)
+- RevenueCat optional — adds entitlement sync but +$X/mo per active sub. Native StoreKit 2 is the v1 path per `feedback_storekit_over_revenuecat.md`.
 
-### Path B — Add native StoreKit 2 subscription proxy (commercial)
-- Server-side function relaying to Anthropic with rate limits
-- StoreKit 2 weekly + yearly subscriptions ($4.99wk / $39.99yr suggested per `feedback_wellness_app_pricing.md`)
-- Hide the BYO key option behind a "I have my own key" advanced toggle in Settings
-- Larger scope — 2–3 days work
-
-Recommendation: ship as **Path A** first, learn from Review, then iterate to Path B once revenue justifies the proxy infra.
+**Run experiments** like Cal AI did (61 paywall A/Bs → +31 % trial-to-paid) — toggle weekly default vs annual default, trial length 7 vs 14 days, BYO link visibility.
 
 ## 7) Build + submit
 
