@@ -242,6 +242,8 @@ export default {
     shuffle: 'Look shufflen',
     todayPick: 'Pick des Tages',
     buildFromLook: 'Aus meinem Schrank bauen',
+    saveOutfit: 'Outfit speichern',
+    saved: 'Gespeichert',
   },
   coach: {
     title: 'Coach',

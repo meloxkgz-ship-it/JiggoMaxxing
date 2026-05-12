@@ -24,6 +24,7 @@ import {
   OCCASIONS,
   Occasion,
   Outfit,
+  saveOutfit,
 } from '@/lib/closet';
 import { useT } from '@/lib/i18n';
 
@@ -43,11 +44,21 @@ export default function BuilderScreen() {
     setOutfit(buildSuggestion(items, occasion, archetype));
   }, [items, occasion, archetype]);
 
+  const [justSaved, setJustSaved] = useState(false);
+
   const reroll = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     // Shuffle items so different ones get picked
     const shuffled = [...items].sort(() => Math.random() - 0.5);
     setItems(shuffled);
+  };
+
+  const save = async () => {
+    if (!outfit) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    await saveOutfit(outfit);
+    setJustSaved(true);
+    setTimeout(() => setJustSaved(false), 1500);
   };
 
   return (
@@ -159,6 +170,16 @@ export default function BuilderScreen() {
                 </View>
               ))}
             </View>
+            <Pressable style={[styles.saveBtn, justSaved && styles.saveBtnDone]} onPress={save}>
+              <Ionicons
+                name={justSaved ? 'checkmark' : 'bookmark-outline'}
+                size={16}
+                color={justSaved ? colors.positive : colors.textOnBronze}
+              />
+              <Text style={[styles.saveBtnText, justSaved && { color: colors.positive }]}>
+                {justSaved ? t('style.saved') : t('style.saveOutfit')}
+              </Text>
+            </Pressable>
           </>
         )}
 
@@ -260,4 +281,14 @@ const styles = StyleSheet.create({
   itemColor: { width: 36, height: 36, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline },
   itemName: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13.5 },
   itemMeta: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 11, marginTop: 2 },
+
+  saveBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 13,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bronze,
+    marginTop: spacing.md,
+  },
+  saveBtnDone: { backgroundColor: 'rgba(126,158,122,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.positive },
+  saveBtnText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 13, letterSpacing: 0.2 },
 });

@@ -242,6 +242,8 @@ export default {
     shuffle: 'Shuffle a look',
     todayPick: 'Today\'s pick',
     buildFromLook: 'Build this from my closet',
+    saveOutfit: 'Save outfit',
+    saved: 'Saved',
   },
   coach: {
     title: 'Coach',

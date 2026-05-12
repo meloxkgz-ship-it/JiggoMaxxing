@@ -372,3 +372,51 @@ export async function seedStarterCloset(): Promise<number> {
   for (const it of STARTER_ITEMS) await addItem(it);
   return STARTER_ITEMS.length;
 }
+
+// ───────── Saved outfits ─────────
+
+const SAVED_KEY = 'closet.outfits';
+
+export type SavedOutfit = {
+  id: string;
+  itemIds: string[];
+  occasion: Occasion;
+  archetype: Archetype;
+  overall: number;
+  savedAt: number;
+};
+
+export async function listSavedOutfits(): Promise<SavedOutfit[]> {
+  const list = await getJSON<SavedOutfit[]>(SAVED_KEY, []);
+  return [...list].sort((a, b) => b.savedAt - a.savedAt);
+}
+
+export async function saveOutfit(o: Outfit): Promise<SavedOutfit> {
+  const list = await getJSON<SavedOutfit[]>(SAVED_KEY, []);
+  const saved: SavedOutfit = {
+    id: `so_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`,
+    itemIds: o.items.map((i) => i.id),
+    occasion: o.occasion,
+    archetype: o.archetype,
+    overall: o.overall,
+    savedAt: Date.now(),
+  };
+  list.unshift(saved);
+  await setJSON(SAVED_KEY, list.slice(0, 50)); // cap
+  return saved;
+}
+
+export async function deleteSavedOutfit(id: string): Promise<void> {
+  const list = await getJSON<SavedOutfit[]>(SAVED_KEY, []);
+  await setJSON(SAVED_KEY, list.filter((o) => o.id !== id));
+}
+
+/** Resolve a SavedOutfit into a full Outfit (or null if items deleted). */
+export async function expandSavedOutfit(saved: SavedOutfit): Promise<Outfit | null> {
+  const all = await listItems();
+  const items = saved.itemIds
+    .map((id) => all.find((i) => i.id === id))
+    .filter((x): x is ClosetItem => !!x);
+  if (items.length === 0) return null;
+  return scoreOutfit(items, saved.occasion, saved.archetype);
+}
