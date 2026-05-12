@@ -90,6 +90,7 @@ export default {
     nextM: '{m} min',
     nextNow: 'Now',
     nextDoneToday: 'All done today',
+    last28: 'Last 28 days',
     insightsTitle: 'Cycle · what\'s working',
     template: 'Template',
     templates: {

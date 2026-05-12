@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CoachMessage } from '@/components/CoachMessage';
 import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
@@ -183,13 +184,11 @@ export default function CoachScreen() {
                     styles.bubble,
                     t.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant,
                   ]}>
-                  <Text
-                    style={[
-                      styles.bubbleText,
-                      t.role === 'user' && styles.bubbleTextUser,
-                    ]}>
-                    {t.content}
-                  </Text>
+                  {t.role === 'user' ? (
+                    <Text style={[styles.bubbleText, styles.bubbleTextUser]}>{t.content}</Text>
+                  ) : (
+                    <CoachMessage text={t.content} />
+                  )}
                 </View>
               </View>
             ))}

@@ -41,6 +41,7 @@ export default function PlanScreen() {
   const [items, setItems] = useState<PlanItem[]>([]);
   const [doneToday, setDoneToday] = useState<string[]>([]);
   const [weekDone, setWeekDone] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [last28, setLast28] = useState<number[]>([]);
 
   const refresh = useCallback(async () => {
     const [t, plan, map] = await Promise.all([
@@ -53,6 +54,8 @@ export default function PlanScreen() {
     setDoneToday(map[todayKey()] ?? []);
     const week = lastNDates(7);
     setWeekDone(week.map((d) => (map[d] ?? []).length));
+    const month = lastNDates(28);
+    setLast28(month.map((d) => (map[d] ?? []).length));
   }, []);
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
@@ -158,6 +161,30 @@ export default function PlanScreen() {
               );
             })}
           </Card>
+        </View>
+
+        {/* 28-day heat strip */}
+        <View style={styles.heatCard}>
+          <Eyebrow>{t('plan.last28')}</Eyebrow>
+          <View style={styles.heatRow}>
+            {last28.map((cnt, i) => {
+              const ratio = items.length ? Math.min(1, cnt / items.length) : 0;
+              // bronze intensity from hairline → bright
+              const alpha = ratio === 0 ? 0.12 : 0.3 + ratio * 0.7;
+              return (
+                <View
+                  key={i}
+                  style={[
+                    styles.heatCell,
+                    {
+                      backgroundColor:
+                        ratio === 0 ? colors.surfaceMuted : `rgba(176,138,90,${alpha})`,
+                    },
+                  ]}
+                />
+              );
+            })}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -308,4 +335,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(126,158,122,0.06)',
   },
   nextDoneText: { color: colors.positive, fontFamily: type.family.sansMedium, fontSize: 13 },
+
+  heatCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    gap: spacing.md,
+  },
+  heatRow: { flexDirection: 'row', gap: 4, marginTop: spacing.sm },
+  heatCell: { flex: 1, aspectRatio: 0.6, borderRadius: 3 },
 });

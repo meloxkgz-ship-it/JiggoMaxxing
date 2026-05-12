@@ -90,6 +90,7 @@ export default {
     nextM: '{m} Min',
     nextNow: 'Jetzt',
     nextDoneToday: 'Heute alles erledigt',
+    last28: 'Letzte 28 Tage',
     insightsTitle: 'Zyklus · was funktioniert',
     template: 'Vorlage',
     templates: {
