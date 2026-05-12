@@ -297,6 +297,7 @@ export default {
     notificationsSub: 'A single quiet reminder at the time you choose. Stored only on this device.',
     notificationsOn: 'Daily reminder',
     notificationsTime: 'Time',
+    sendTest: 'Send test nudge',
     permissionNeeded: 'Permission needed',
     permissionBody: 'Enable notifications in iOS Settings to receive the daily nudge.',
     privacy: 'Privacy',

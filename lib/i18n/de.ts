@@ -297,6 +297,7 @@ export default {
     notificationsSub: 'Eine ruhige Erinnerung zur gewählten Zeit. Nur lokal gespeichert.',
     notificationsOn: 'Tägliche Erinnerung',
     notificationsTime: 'Zeit',
+    sendTest: 'Test-Nudge senden',
     permissionNeeded: 'Berechtigung nötig',
     permissionBody: 'Aktiviere Mitteilungen in den iOS-Einstellungen, um die tägliche Nudge zu erhalten.',
     privacy: 'Privatsphäre',

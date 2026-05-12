@@ -60,6 +60,25 @@ export async function cancelNudgeNotification(): Promise<void> {
   await setJSON<string | null>(SCHEDULED_KEY, null);
 }
 
+/** Fire the daily nudge immediately for testing. Triggers a 1-second
+ * delayed local notification — bypasses the daily schedule. */
+export async function fireTestNudge(lang: Lang): Promise<void> {
+  const granted = await requestPermission();
+  if (!granted) return;
+  const nudge = getTodayNudge(lang);
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: tFor(lang, 'home.nudge'),
+      body: nudge.title,
+      sound: false,
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 2,
+    } as Notifications.TimeIntervalTriggerInput,
+  });
+}
+
 export async function scheduleNudgeNotification(
   pref: NotificationPref,
   lang: Lang,

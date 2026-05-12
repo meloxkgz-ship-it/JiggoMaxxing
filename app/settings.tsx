@@ -20,6 +20,7 @@ import { clearHistory } from '@/lib/coach';
 import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
 import {
   cancelNudgeNotification,
+  fireTestNudge,
   getNotificationPref,
   NotificationPref,
   requestPermission,
@@ -208,6 +209,15 @@ export default function SettingsScreen() {
                   </Pressable>
                 ))}
               </ScrollView>
+              <Pressable
+                style={styles.testNudge}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                  fireTestNudge(lang);
+                }}>
+                <Ionicons name="notifications-outline" size={14} color={colors.bronze} />
+                <Text style={styles.testNudgeText}>{t('settings.sendTest')}</Text>
+              </Pressable>
             </View>
           )}
         </Section>
@@ -380,6 +390,17 @@ const styles = StyleSheet.create({
   hourChipActive: { backgroundColor: colors.bronze, borderColor: colors.bronze },
   hourChipText: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.4 },
   hourChipTextActive: { color: colors.textOnBronze },
+
+  testNudge: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingHorizontal: spacing.lg, paddingVertical: 10,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.32)',
+    backgroundColor: colors.bronzeOnBlack,
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+  },
+  testNudgeText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 12, letterSpacing: 0.3 },
 
   whyRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
