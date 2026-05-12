@@ -1,50 +1,99 @@
-# Welcome to your Expo app 👋
+# JIGGO MAXXING
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+**Build your edge. Privately.**
+A premium, non-toxic men's edge-coach for iOS — grooming, physique, style, confidence, and discipline. Local-first, no comparisons, no ratings.
 
-## Get started
+> Insight, not judgement.
 
-1. Install dependencies
+## What it does
 
-   ```bash
-   npm install
-   ```
+| Tab        | Feature                                                                   |
+| ---------- | ------------------------------------------------------------------------- |
+| **Home**   | Daily Edge nudge · Edge Index hero · Discipline stat grid · Quick capture |
+| **Plan**   | 4 switchable templates · Next-Up countdown · weekly progress dots         |
+| **Scan**   | Camera/library photo capture · 6-dim local PRNG scoring · history         |
+| **Journal**| Weight/sleep/mood/notes · sparkline · streak · weekly review              |
+| **Style**  | Today's Pick · 12 curated looks (Aesty-style) · personal Closet · Outfit Builder · Match Score |
+| **Coach**  | Live Claude chat (Haiku 4.5) with non-toxic system prompt · 5 topic cards |
 
-2. Start the app
+## Tech stack
 
-   ```bash
-   npx expo start
-   ```
+- React Native + Expo (~SDK 54), Expo Router, TypeScript, new architecture
+- Reanimated, Linear Gradient, BlurView, Expo Image
+- AsyncStorage + SecureStore for local-only data
+- Anthropic Messages API via direct REST (Coach only)
+- i18n: device-locale boot via expo-localization, EN + DE
 
-In the output, you'll find options to open the app in a
+## Privacy contract
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- No accounts, no analytics, no comparison features ever
+- Scans + journal + plan + closet never leave the device
+- Coach messages go to Anthropic *only* when the user supplies a key, stored in iOS Keychain (`WHEN_UNLOCKED_THIS_DEVICE_ONLY`)
+- `Reset all data` in Settings wipes every key under the `jiggo.v1.` namespace
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Project layout
 
-## Get a fresh project
+```
+app/
+  (tabs)/              # 6 main screens
+    _layout.tsx        # Floating bottom-tab bar (blurred, bronze active)
+    index.tsx          # Home / Edge Hub
+    plan.tsx           # Maxxing Plan
+    scan.tsx           # Max Scan (camera capture + history)
+    journal.tsx        # Physique journal
+    style.tsx          # Closet + Looks + Builder entry
+    coach.tsx          # Claude chat + topic cards
+  _layout.tsx          # Root: fonts, LanguageProvider, onboarding gate
+  onboarding.tsx       # 3-step intro + anti-toxic pact
+  settings.tsx         # Profile, language, coach key, danger zone
+  scan-detail.tsx      # Single-scan breakdown + micro-actions
+  journal-entry.tsx    # New journal note (modal)
+  closet-add.tsx       # Add closet item (modal)
+  builder.tsx          # Outfit Builder (modal, accepts ?archetype&occasion)
+  look-detail.tsx      # Curated look detail (modal)
+  why.tsx              # "Why no ratings" essay (modal)
 
-When you're ready, run:
-
-```bash
-npm run reset-project
+components/            # Card, Eyebrow, JMMark, ScreenHeader
+constants/jiggo-theme.ts
+lib/
+  i18n/                # en.ts, de.ts, index.tsx (LanguageProvider)
+  storage.ts           # Typed AsyncStorage wrapper + wipeAll
+  types.ts             # Shared model types
+  journal.ts           # CRUD + streak helpers
+  scan.ts              # Deterministic local scoring
+  plan.ts              # 4 templates + completion tracking
+  closet.ts            # Items, palette, 12 Looks, scoreOutfit(), seed
+  coach.ts             # Anthropic REST client + system prompt
+  nudge.ts             # 75×2 daily nudges with day-of-year rotation
+  settings.ts          # Settings + Keychain key store
+scripts/make-icons.py  # Generates all app icons from the JM monogram
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Common tasks
 
-## Learn more
+```sh
+# Type check
+npx tsc --noEmit
 
-To learn more about developing your project with Expo, look at the following resources:
+# Web smoke build (fastest)
+npx expo export --platform web --no-bytecode
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+# Regenerate app icons
+python3 scripts/make-icons.py
 
-## Join the community
+# Native iOS run (requires CocoaPods)
+sudo gem install cocoapods --no-document   # once
+npx expo run:ios
+```
 
-Join our community of developers creating universal apps.
+## Anti-pattern guardrails
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Anything matching the list below is a non-starter, no matter how engaging:
+
+- Face / body ratings, 0–10 scores, attractiveness percentages, PSL
+- Comparisons to other users, leaderboards, social benchmarks
+- Surgery suggestions, aesthetic gatekeeping
+- Before/after shame loops, transformation badges based on appearance
+- "Pretty privilege" mechanics or anything that would feel good to a man who hates himself
+
+If a feature *would* feel good to that man, we don't ship it. The Coach refuses these on prompt level; the UI never surfaces a path to them.
