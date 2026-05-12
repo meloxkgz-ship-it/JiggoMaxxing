@@ -13,11 +13,19 @@ import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import * as Haptics from 'expo-haptics';
 
+import { MilestoneCelebration } from '@/components/MilestoneCelebration';
 import { computeEdge, EdgeBreakdown } from '@/lib/edge';
 import { useLanguage, useT } from '@/lib/i18n';
 import { getStreak, listEntries, todayKey } from '@/lib/journal';
 import { getActivePlan, getCompletion } from '@/lib/plan';
-import { getNudgeStreak, getTodayNudge, isNudgeDone, Nudge, setNudgeDone } from '@/lib/nudge';
+import {
+  consumeMilestone,
+  getNudgeStreak,
+  getTodayNudge,
+  isNudgeDone,
+  Nudge,
+  setNudgeDone,
+} from '@/lib/nudge';
 import { listScans } from '@/lib/scan';
 import { getSettings } from '@/lib/settings';
 import { JournalEntry, PlanItem, ScanResult, Settings } from '@/lib/types';
@@ -43,6 +51,7 @@ export default function HomeHubScreen() {
   const [journalStreak, setJournalStreak] = useState(0);
   const [edge, setEdge] = useState<EdgeBreakdown | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [milestone, setMilestone] = useState<number | null>(null);
 
   const reload = useCallback(async () => {
     const [s, sc, je, pc, pp, nd, ns, js, eb] = await Promise.all([
@@ -82,7 +91,15 @@ export default function HomeHubScreen() {
     const next = !nudgeDone;
     await setNudgeDone(next);
     setNudgeDoneState(next);
-    setNudgeStreak(await getNudgeStreak());
+    const newStreak = await getNudgeStreak();
+    setNudgeStreak(newStreak);
+    if (next) {
+      const m = await consumeMilestone(newStreak);
+      if (m != null) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        setMilestone(m);
+      }
+    }
   };
 
   const greeting = (() => {
@@ -113,6 +130,7 @@ export default function HomeHubScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
+      <MilestoneCelebration milestone={milestone} onDismiss={() => setMilestone(null)} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}

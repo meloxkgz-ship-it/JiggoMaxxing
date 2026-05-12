@@ -247,3 +247,22 @@ export async function getNudgeStreak(): Promise<number> {
   }
   return streak;
 }
+
+const MILESTONE_KEY = 'nudges.celebrated';
+export const MILESTONES = [3, 7, 14, 30, 60, 100, 200, 365];
+
+/**
+ * If the current streak hit a milestone we haven't celebrated yet,
+ * return that milestone number and record it. Otherwise null.
+ */
+export async function consumeMilestone(streak: number): Promise<number | null> {
+  if (streak <= 0) return null;
+  const lastCelebrated = await getJSON<number>(MILESTONE_KEY, 0);
+  // Find the highest reached milestone that's also > lastCelebrated
+  const reached = MILESTONES.filter((m) => m <= streak);
+  if (reached.length === 0) return null;
+  const top = reached[reached.length - 1];
+  if (top <= lastCelebrated) return null;
+  await setJSON<number>(MILESTONE_KEY, top);
+  return top;
+}
