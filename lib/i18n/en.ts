@@ -303,6 +303,7 @@ export default {
     },
     error: 'Coach unavailable. Check your network or API key.',
     copied: 'Copied',
+    regenerate: 'Regenerate',
     clearTitle: 'Clear coach history?',
     clearBody: 'This wipes all coach conversations on this device.',
   },

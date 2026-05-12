@@ -75,6 +75,50 @@ export default function CoachScreen() {
     scrollRef.current?.scrollToEnd({ animated: true });
   }, [turns.length, busy]);
 
+  const runCoach = async (history: CoachTurn[]) => {
+    setBusy(true);
+    setStreaming('');
+    try {
+      let assembled = '';
+      try {
+        assembled = await streamToCoach(history, (chunk) => {
+          assembled += chunk;
+          setStreaming(assembled);
+        });
+      } catch {
+        assembled = await sendToCoach(history);
+      }
+      const aiTurn: CoachTurn = { role: 'assistant', content: assembled, ts: Date.now() };
+      const next = [...history, aiTurn];
+      setTurns(next);
+      setStreaming(null);
+      // Persist by re-writing the full thread (overwrites; appendTurn would append again on regenerate)
+      const { clearHistory: _clear } = await import('@/lib/coach');
+      await _clear();
+      for (const trn of next) await appendTurn(trn);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } catch (e: any) {
+      setError(e?.message ?? t('coach.error'));
+      setStreaming(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const regenerate = async () => {
+    if (busy) return;
+    // Drop the last assistant turn (if any) and re-run with what's left
+    const trimmedTurns = [...turns];
+    while (trimmedTurns.length && trimmedTurns[trimmedTurns.length - 1].role === 'assistant') {
+      trimmedTurns.pop();
+    }
+    if (trimmedTurns.length === 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    setTurns(trimmedTurns);
+    await runCoach(trimmedTurns);
+  };
+
   const send = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || busy) return;
@@ -246,6 +290,13 @@ export default function CoachScreen() {
               </View>
             )}
 
+            {!busy && turns.length > 0 && turns[turns.length - 1].role === 'assistant' && (
+              <Pressable style={styles.regenBtn} onPress={regenerate}>
+                <Ionicons name="refresh-outline" size={14} color={colors.bronze} />
+                <Text style={styles.regenText}>{t('coach.regenerate')}</Text>
+              </Pressable>
+            )}
+
             {error && (
               <View style={styles.errorBox}>
                 <Ionicons name="alert-circle" size={14} color={colors.danger} />
@@ -360,6 +411,17 @@ const styles = StyleSheet.create({
   bubbleTyping: { flexDirection: 'row', gap: 6, paddingVertical: 14, paddingHorizontal: 14 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.textTertiary },
   dotOn: { backgroundColor: colors.bronze },
+
+  regenBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: spacing.md, paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    backgroundColor: colors.surface,
+    alignSelf: 'flex-start',
+    marginLeft: 36, // align with assistant bubble
+  },
+  regenText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 11.5, letterSpacing: 0.3 },
 
   errorBox: {
     flexDirection: 'row', gap: 8, alignItems: 'center',

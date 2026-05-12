@@ -303,6 +303,7 @@ export default {
     },
     error: 'Coach nicht erreichbar. Prüf Netzwerk oder API-Key.',
     copied: 'Kopiert',
+    regenerate: 'Neu generieren',
     clearTitle: 'Coach-Verlauf löschen?',
     clearBody: 'Löscht alle Coach-Konversationen auf diesem Gerät.',
   },
