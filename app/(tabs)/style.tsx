@@ -19,9 +19,14 @@ import {
   Archetype,
   ClosetItem,
   deleteItem,
+  deleteSavedOutfit,
+  expandSavedOutfit,
   listItems,
+  listSavedOutfits,
   Look,
   LOOKS,
+  Outfit,
+  SavedOutfit,
   seedStarterCloset,
 } from '@/lib/closet';
 import { useT } from '@/lib/i18n';
@@ -32,10 +37,18 @@ export default function StyleScreen() {
   const t = useT();
   const [items, setItems] = useState<ClosetItem[]>([]);
   const [filter, setFilter] = useState<'all' | Archetype>('all');
-  const [tab, setTab] = useState<'closet' | 'looks'>('closet');
+  const [tab, setTab] = useState<'closet' | 'looks' | 'saved'>('closet');
+  const [saved, setSaved] = useState<{ saved: SavedOutfit; outfit: Outfit | null }[]>([]);
 
   useFocusEffect(useCallback(() => {
-    (async () => setItems(await listItems()))();
+    (async () => {
+      setItems(await listItems());
+      const list = await listSavedOutfits();
+      const enriched = await Promise.all(
+        list.map(async (s) => ({ saved: s, outfit: await expandSavedOutfit(s) })),
+      );
+      setSaved(enriched);
+    })();
   }, []));
 
   const looksFiltered = filter === 'all' ? LOOKS : LOOKS.filter((l) => l.archetype === filter);
@@ -65,16 +78,19 @@ export default function StyleScreen() {
           <Text style={[styles.tabBtnText, tab === 'closet' && styles.tabBtnTextActive]}>{t('style.closet')} · {items.length}</Text>
         </Pressable>
         <Pressable onPress={() => setTab('looks')} style={[styles.tabBtn, tab === 'looks' && styles.tabBtnActive]}>
-          <Text style={[styles.tabBtnText, tab === 'looks' && styles.tabBtnTextActive]}>{t('style.looks')} · {looksFiltered.length}</Text>
+          <Text style={[styles.tabBtnText, tab === 'looks' && styles.tabBtnTextActive]}>{t('style.looks')}</Text>
+        </Pressable>
+        <Pressable onPress={() => setTab('saved')} style={[styles.tabBtn, tab === 'saved' && styles.tabBtnActive]}>
+          <Text style={[styles.tabBtnText, tab === 'saved' && styles.tabBtnTextActive]}>{t('style.savedTab')} · {saved.length}</Text>
         </Pressable>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {tab === 'closet' ? (
+        {tab === 'closet' && (
           <ClosetView items={items} onDelete={onDelete} onSeed={async () => setItems(await listItems())} />
-        ) : (
+        )}
+        {tab === 'looks' && (
           <>
-            {/* Today's pick — deterministic by day-of-year so it doesn't shuffle each visit */}
             <TodaysPickCard />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
               {FILTERS.map((f) => (
@@ -92,6 +108,23 @@ export default function StyleScreen() {
               {looksFiltered.map((l) => <LookCard key={l.id} look={l} t={t} />)}
             </View>
           </>
+        )}
+        {tab === 'saved' && (
+          <SavedView
+            saved={saved}
+            onOpen={(s) =>
+              router.push({
+                pathname: '/builder',
+                params: { archetype: s.archetype, occasion: s.occasion },
+              } as any)
+            }
+            onDelete={async (s) => {
+              await deleteSavedOutfit(s.id);
+              const list = await listSavedOutfits();
+              const enriched = await Promise.all(list.map(async (x) => ({ saved: x, outfit: await expandSavedOutfit(x) })));
+              setSaved(enriched);
+            }}
+          />
         )}
         <View style={{ height: 140 }} />
       </ScrollView>
@@ -147,6 +180,53 @@ function ClosetView({ items, onDelete, onSeed }: { items: ClosetItem[]; onDelete
             </View>
           </View>
           <Text style={styles.itemLabel} numberOfLines={1}>{it.name}</Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function SavedView({
+  saved,
+  onOpen,
+  onDelete,
+}: {
+  saved: { saved: SavedOutfit; outfit: Outfit | null }[];
+  onOpen: (s: SavedOutfit) => void;
+  onDelete: (s: SavedOutfit) => void;
+}) {
+  const t = useT();
+  if (saved.length === 0) {
+    return (
+      <View style={styles.empty}>
+        <Ionicons name="bookmark-outline" size={36} color={colors.bronze} />
+        <Text style={styles.emptyTitle}>{t('style.emptySaved')}</Text>
+        <Text style={styles.emptyBody}>{t('style.emptySavedBody')}</Text>
+      </View>
+    );
+  }
+  return (
+    <View style={{ paddingHorizontal: spacing.xl, gap: spacing.md }}>
+      {saved.map(({ saved: s, outfit }) => (
+        <Pressable
+          key={s.id}
+          style={styles.savedCard}
+          onPress={() => onOpen(s)}
+          onLongPress={() => onDelete(s)}>
+          <View style={styles.savedPaletteRow}>
+            {(outfit?.items.map((i) => i.color) ?? []).slice(0, 5).map((c, i) => (
+              <View key={i} style={[styles.savedSwatch, { backgroundColor: c, marginLeft: i === 0 ? 0 : -8 }]} />
+            ))}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.savedTitle}>
+              {t(`style.archetypes.${s.archetype}`)} · {t(`style.occasions.${s.occasion}`)}
+            </Text>
+            <Text style={styles.savedMeta}>
+              {new Date(s.savedAt).toLocaleDateString()} · {outfit?.items.length ?? '—'}
+            </Text>
+          </View>
+          <Text style={styles.savedScore}>{outfit?.overall ?? s.overall}</Text>
         </Pressable>
       ))}
     </View>
@@ -299,6 +379,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bronze, marginTop: spacing.lg,
   },
   seedCtaText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 13, letterSpacing: 0.2 },
+
+  savedCard: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+  },
+  savedPaletteRow: { flexDirection: 'row' },
+  savedSwatch: {
+    width: 26, height: 26, borderRadius: 13,
+    borderWidth: 1.2, borderColor: colors.surface,
+  },
+  savedTitle: { color: colors.bronze, fontFamily: type.family.sansSemi, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase' },
+  savedMeta: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12, marginTop: 2 },
+  savedScore: { color: colors.textPrimary, fontFamily: type.family.sansBlack, fontSize: 22, letterSpacing: type.letterSpacing.tight },
 
   fab: {
     position: 'absolute',
