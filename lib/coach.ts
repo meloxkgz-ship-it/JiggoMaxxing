@@ -5,7 +5,8 @@
  * System prompt locks the JIGGO MAXXING tone: confident, private,
  * disciplined, masculine, supportive. NEVER toxic looksmaxxing vocab.
  */
-import { getApiKey } from './settings';
+import { computeEdge } from './edge';
+import { getApiKey, getSettings } from './settings';
 import { getJSON, setJSON } from './storage';
 import { CoachTurn } from './types';
 
@@ -40,7 +41,9 @@ Response shape:
 - End with a single sharp prompt that moves the conversation forward.
 - Use bullets only when listing 3+ items. Otherwise prose.
 
-If the user is venting, acknowledge once, then redirect to a controllable action. Never moralise.`;
+If the user is venting, acknowledge once, then redirect to a controllable action. Never moralise.
+
+Language: mirror the user's language exactly. If they write in German, reply in German. If in English, in English. Never switch unprompted.`;
 
 export async function listHistory(): Promise<CoachTurn[]> {
   return getJSON<CoachTurn[]>(KEY, []);
@@ -63,6 +66,13 @@ export type CoachStream = {
   error?: string;
 };
 
+async function buildUserContext(): Promise<string> {
+  const [settings, edge] = await Promise.all([getSettings(), computeEdge()]);
+  const name = settings.name ? `User name: ${settings.name}.` : '';
+  const goal = settings.goalKg ? ` Goal weight: ${settings.goalKg} kg.` : '';
+  return `${name}${goal} Current Edge breakdown — total ${edge.total}/100 (scan ${edge.scan}, journal-streak signal ${edge.journal}, nudge-streak signal ${edge.nudge}, plan-today ${edge.plan}). Use these only as background. Do not lecture about them. Do not turn them into a score-ranking.`.trim();
+}
+
 export async function sendToCoach(history: CoachTurn[]): Promise<string> {
   const apiKey = await getApiKey();
   if (!apiKey) {
@@ -70,6 +80,7 @@ export async function sendToCoach(history: CoachTurn[]): Promise<string> {
       'No Anthropic API key set. Open Settings → Coach to add one.',
     );
   }
+  const userContext = await buildUserContext();
   const messages = history.map((t) => ({ role: t.role, content: t.content }));
 
   const res = await fetch(ENDPOINT, {
@@ -83,7 +94,10 @@ export async function sendToCoach(history: CoachTurn[]): Promise<string> {
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 600,
-      system: SYSTEM_PROMPT,
+      system: [
+        { type: 'text', text: SYSTEM_PROMPT },
+        { type: 'text', text: userContext },
+      ],
       messages,
     }),
   });
