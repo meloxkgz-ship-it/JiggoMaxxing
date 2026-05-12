@@ -19,13 +19,16 @@ import { useLanguage, useT } from '@/lib/i18n';
 import { getStreak, listEntries, todayKey } from '@/lib/journal';
 import { getActivePlan, getCompletion } from '@/lib/plan';
 import {
+  canGraceToday,
   consumeMilestone,
   getNudgeStreak,
   getTodayNudge,
+  graceToday,
   isNudgeDone,
   Nudge,
   setNudgeDone,
 } from '@/lib/nudge';
+import { Alert } from 'react-native';
 import { listScans } from '@/lib/scan';
 import { getSettings } from '@/lib/settings';
 import { JournalEntry, PlanItem, ScanResult, Settings } from '@/lib/types';
@@ -52,9 +55,10 @@ export default function HomeHubScreen() {
   const [edge, setEdge] = useState<EdgeBreakdown | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [milestone, setMilestone] = useState<number | null>(null);
+  const [graceAvail, setGraceAvail] = useState(false);
 
   const reload = useCallback(async () => {
-    const [s, sc, je, pc, pp, nd, ns, js, eb] = await Promise.all([
+    const [s, sc, je, pc, pp, nd, ns, js, eb, ga] = await Promise.all([
       getSettings(),
       listScans(),
       listEntries(),
@@ -64,6 +68,7 @@ export default function HomeHubScreen() {
       getNudgeStreak(),
       getStreak(),
       computeEdge(),
+      canGraceToday(),
     ]);
     setSettings(s);
     setScan(sc[0] ?? null);
@@ -75,7 +80,19 @@ export default function HomeHubScreen() {
     setNudgeStreak(ns);
     setJournalStreak(js);
     setEdge(eb);
+    setGraceAvail(ga);
   }, [lang]);
+
+  const useGrace = async () => {
+    const ok = await graceToday();
+    if (!ok) {
+      Alert.alert(t('home.graceUnavailable'), t('home.graceUnavailableBody'));
+      return;
+    }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Alert.alert(t('home.graceUsedTitle'), t('home.graceUsedBody'));
+    await reload();
+  };
 
   useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
@@ -193,8 +210,18 @@ export default function HomeHubScreen() {
             <Text style={styles.nudgeBody}>{nudge.body}</Text>
             <View style={styles.nudgeFoot}>
               <Text style={styles.nudgeTheme}>{nudge.theme}</Text>
-              <View style={[styles.nudgeCheck, nudgeDone && styles.nudgeCheckDone]}>
-                {nudgeDone && <Ionicons name="checkmark" size={14} color={colors.textOnBronze} />}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {!nudgeDone && graceAvail && (
+                  <Pressable
+                    onPress={(e) => { e.stopPropagation(); useGrace(); }}
+                    hitSlop={6}
+                    style={styles.graceBtn}>
+                    <Text style={styles.graceBtnText}>{t('home.grace')}</Text>
+                  </Pressable>
+                )}
+                <View style={[styles.nudgeCheck, nudgeDone && styles.nudgeCheckDone]}>
+                  {nudgeDone && <Ionicons name="checkmark" size={14} color={colors.textOnBronze} />}
+                </View>
               </View>
             </View>
           </Pressable>
@@ -561,6 +588,13 @@ const styles = StyleSheet.create({
   nudgeTheme: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10.5, letterSpacing: 0.6, textTransform: 'uppercase' },
   nudgeCheck: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: colors.hairline, alignItems: 'center', justifyContent: 'center' },
   nudgeCheckDone: { backgroundColor: colors.bronze, borderColor: colors.bronze },
+  graceBtn: {
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.4)',
+    backgroundColor: colors.bronzeOnBlack,
+  },
+  graceBtnText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 10.5, letterSpacing: 0.4, textTransform: 'uppercase' },
 
   heroWrap: { marginTop: spacing.xl },
   hero: {

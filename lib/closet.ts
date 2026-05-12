@@ -134,6 +134,23 @@ export type Look = {
   copy: string;
 };
 
+/** Average tone of a look based on its palette. */
+export function lookTone(look: Look): Tone {
+  let warm = 0;
+  let cool = 0;
+  let neutral = 0;
+  for (const hex of look.palette) {
+    const c = COLORS.find((x) => x.hex.toLowerCase() === hex.toLowerCase());
+    if (!c) continue;
+    if (c.tone === 'warm') warm++;
+    else if (c.tone === 'cool') cool++;
+    else neutral++;
+  }
+  if (warm > cool && warm > neutral) return 'warm';
+  if (cool > warm && cool > neutral) return 'cool';
+  return 'neutral';
+}
+
 export const LOOKS: Look[] = [
   {
     id: 'l1',

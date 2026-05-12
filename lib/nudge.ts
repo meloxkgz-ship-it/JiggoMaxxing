@@ -233,14 +233,47 @@ export async function setNudgeDone(done: boolean): Promise<void> {
   await setJSON(KEY, map);
 }
 
-/** Streak of consecutive completed daily nudges. */
+const GRACE_KEY = 'nudges.grace';
+type GraceMap = Record<string, true>; // dates marked as "graced"
+
+export async function getGraceDays(): Promise<GraceMap> {
+  return getJSON<GraceMap>(GRACE_KEY, {});
+}
+
+/** Are we allowed to grace today? Limit: one per ISO week. */
+export async function canGraceToday(): Promise<boolean> {
+  const map = await getGraceDays();
+  const d = new Date();
+  // ISO week: subtract day-of-week offset (Mon=0) and walk back 7 days
+  const offset = (d.getDay() + 6) % 7;
+  const start = new Date(d);
+  start.setDate(d.getDate() - offset);
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(start);
+    day.setDate(start.getDate() + i);
+    if (map[day.toISOString().slice(0, 10)]) return false;
+  }
+  return true;
+}
+
+export async function graceToday(): Promise<boolean> {
+  const can = await canGraceToday();
+  if (!can) return false;
+  const map = await getGraceDays();
+  map[todayKey()] = true;
+  await setJSON(GRACE_KEY, map);
+  return true;
+}
+
+/** Streak of consecutive completed daily nudges. Graced days count as completed. */
 export async function getNudgeStreak(): Promise<number> {
   const map = await getJSON<Record<string, boolean>>(KEY, {});
+  const grace = await getGraceDays();
   let streak = 0;
   const d = new Date();
   for (;;) {
     const key = d.toISOString().slice(0, 10);
-    if (map[key]) {
+    if (map[key] || grace[key]) {
       streak++;
       d.setDate(d.getDate() - 1);
     } else break;

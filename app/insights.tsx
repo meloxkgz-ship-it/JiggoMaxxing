@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -79,8 +80,10 @@ export default function InsightsScreen() {
     })();
   }, []);
 
-  const recentScores = scans.slice(0, 10).map((s) => s.overall).reverse();
+  const recentScans = scans.slice(0, 10).reverse();
+  const recentScores = recentScans.map((s) => s.overall);
   const last14Entries = lastNDates(14).map((d) => entries.filter((e) => e.date === d).length);
+  const [selectedScanIdx, setSelectedScanIdx] = useState<number | null>(null);
 
   return (
     <SafeAreaView edges={['top']} style={styles.root}>
@@ -105,20 +108,52 @@ export default function InsightsScreen() {
           {recentScores.length === 0 ? (
             <EmptyHint text={t('home.insightsEmpty')} />
           ) : (
-            <View style={styles.lineRow}>
-              {recentScores.map((v, i) => {
-                const min = Math.min(...recentScores);
-                const max = Math.max(...recentScores);
-                const range = Math.max(8, max - min);
-                const h = ((v - min) / range) * 70 + 8;
-                return (
-                  <View key={i} style={styles.lineCol}>
-                    <Text style={styles.lineVal}>{v}</Text>
-                    <View style={[styles.lineBar, { height: h, backgroundColor: i === recentScores.length - 1 ? colors.bronze : colors.surfaceMuted }]} />
-                  </View>
-                );
-              })}
-            </View>
+            <>
+              <View style={styles.lineRow}>
+                {recentScores.map((v, i) => {
+                  const min = Math.min(...recentScores);
+                  const max = Math.max(...recentScores);
+                  const range = Math.max(8, max - min);
+                  const h = ((v - min) / range) * 70 + 8;
+                  const isSelected = selectedScanIdx === i;
+                  return (
+                    <Pressable
+                      key={i}
+                      style={styles.lineCol}
+                      onPress={() => {
+                        Haptics.selectionAsync().catch(() => {});
+                        setSelectedScanIdx(isSelected ? null : i);
+                      }}>
+                      <Text style={[styles.lineVal, isSelected && { color: colors.bronze }]}>{v}</Text>
+                      <View
+                        style={[
+                          styles.lineBar,
+                          {
+                            height: h,
+                            backgroundColor:
+                              isSelected ? colors.bronzeBright
+                              : i === recentScores.length - 1 ? colors.bronze
+                              : colors.surfaceMuted,
+                          },
+                        ]}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {selectedScanIdx != null && recentScans[selectedScanIdx] && (
+                <ScanDetail
+                  scan={recentScans[selectedScanIdx]}
+                  onOpen={() =>
+                    router.push({
+                      pathname: '/scan-detail',
+                      params: { id: recentScans[selectedScanIdx].id },
+                    } as any)
+                  }
+                  t={t}
+                />
+              )}
+            </>
           )}
         </Section>
 
@@ -181,6 +216,48 @@ export default function InsightsScreen() {
         <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function ScanDetail({
+  scan,
+  onOpen,
+  t,
+}: {
+  scan: ScanResult;
+  onOpen: () => void;
+  t: (k: string, vars?: any) => string;
+}) {
+  const date = new Date(scan.createdAt).toLocaleString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+  const sortedDims = Object.entries(scan.dimensions).sort((a, b) => b[1] - a[1]);
+  return (
+    <Pressable style={styles.scanDetail} onPress={onOpen}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Text style={styles.scanDetailDate}>{date}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+          <Text style={styles.scanDetailScore}>{scan.overall}</Text>
+          <Text style={styles.scanDetailUnit}>/100</Text>
+        </View>
+      </View>
+      <View style={styles.scanDetailDims}>
+        {sortedDims.map(([name, v]) => (
+          <View key={name} style={styles.scanDetailDim}>
+            <Text style={styles.scanDetailDimName}>{t(`scan.dimensions.${name}` as any)}</Text>
+            <Text style={styles.scanDetailDimVal}>{v}</Text>
+          </View>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+        <Text style={styles.scanDetailOpen}>{t('common.open')}</Text>
+        <Ionicons name="chevron-forward" size={12} color={colors.bronze} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -265,4 +342,24 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   moodValue: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 20, letterSpacing: type.letterSpacing.tight, marginTop: 4 },
+
+  scanDetail: {
+    marginTop: spacing.md, paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline,
+    gap: spacing.sm,
+  },
+  scanDetailDate: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13 },
+  scanDetailScore: { color: colors.bronze, fontFamily: type.family.sansBlack, fontSize: 22, letterSpacing: type.letterSpacing.tight },
+  scanDetailUnit: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11, marginLeft: 2 },
+  scanDetailDims: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  scanDetailDim: {
+    paddingHorizontal: 9, paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    flexDirection: 'row', gap: 6, alignItems: 'baseline',
+  },
+  scanDetailDimName: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10.5, letterSpacing: 0.3 },
+  scanDetailDimVal: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 12 },
+  scanDetailOpen: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase' },
 });

@@ -25,9 +25,11 @@ import {
   listSavedOutfits,
   Look,
   LOOKS,
+  lookTone,
   Outfit,
   SavedOutfit,
   seedStarterCloset,
+  Tone,
 } from '@/lib/closet';
 import { useT } from '@/lib/i18n';
 
@@ -37,6 +39,7 @@ export default function StyleScreen() {
   const t = useT();
   const [items, setItems] = useState<ClosetItem[]>([]);
   const [filter, setFilter] = useState<'all' | Archetype>('all');
+  const [toneFilter, setToneFilter] = useState<'all' | Tone>('all');
   const [tab, setTab] = useState<'closet' | 'looks' | 'saved'>('closet');
   const [saved, setSaved] = useState<{ saved: SavedOutfit; outfit: Outfit | null }[]>([]);
 
@@ -51,7 +54,9 @@ export default function StyleScreen() {
     })();
   }, []));
 
-  const looksFiltered = filter === 'all' ? LOOKS : LOOKS.filter((l) => l.archetype === filter);
+  const looksFiltered = LOOKS
+    .filter((l) => filter === 'all' || l.archetype === filter)
+    .filter((l) => toneFilter === 'all' || lookTone(l) === toneFilter);
 
   const onDelete = (it: ClosetItem) => {
     Alert.alert(t('common.delete'), it.name, [
@@ -100,6 +105,18 @@ export default function StyleScreen() {
                   style={[styles.chip, filter === f && styles.chipActive]}>
                   <Text style={[styles.chipText, filter === f && styles.chipTextActive]}>
                     {f === 'all' ? t('common.seeAll') : t(`style.archetypes.${f}`)}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+              {(['all', 'warm', 'cool', 'neutral'] as const).map((tn) => (
+                <Pressable
+                  key={tn}
+                  onPress={() => setToneFilter(tn)}
+                  style={[styles.toneChip, toneFilter === tn && styles.toneChipActive]}>
+                  <Text style={[styles.chipText, toneFilter === tn && styles.chipTextActive]}>
+                    {t(`style.tones.${tn}` as any)}
                   </Text>
                 </Pressable>
               ))}
@@ -305,6 +322,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline, backgroundColor: colors.surface,
   },
   chipActive: { backgroundColor: colors.bronze, borderColor: colors.bronze },
+  toneChip: {
+    paddingHorizontal: spacing.md, paddingVertical: 7, borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline, backgroundColor: colors.surface,
+  },
+  toneChipActive: { backgroundColor: colors.bronzeOnBlack, borderColor: 'rgba(176,138,90,0.4)' },
   chipText: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 12, letterSpacing: 0.3 },
   chipTextActive: { color: colors.textOnBronze },
 
