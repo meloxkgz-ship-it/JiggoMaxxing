@@ -153,7 +153,9 @@ function ClosetView({ items, onDelete, onSeed }: { items: ClosetItem[]; onDelete
 
 function LookCard({ look, t }: { look: Look; t: (k: string, vars?: any) => string }) {
   return (
-    <View style={styles.lookCard}>
+    <Pressable
+      style={styles.lookCard}
+      onPress={() => router.push({ pathname: '/look-detail', params: { id: look.id } } as any)}>
       <View style={styles.lookSwatchRow}>
         {look.palette.map((c, i) => (
           <View key={i} style={[styles.lookSwatch, { backgroundColor: c, marginLeft: i === 0 ? 0 : -10 }]} />
@@ -162,7 +164,7 @@ function LookCard({ look, t }: { look: Look; t: (k: string, vars?: any) => strin
       <Text style={styles.lookTitle}>{look.title}</Text>
       <Text style={styles.lookMeta}>{t(`style.archetypes.${look.archetype}`)} · {t(`style.occasions.${look.occasion}`)}</Text>
       <Text style={styles.lookCopy}>{look.copy}</Text>
-    </View>
+    </Pressable>
   );
 }
 
