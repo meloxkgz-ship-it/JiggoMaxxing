@@ -106,6 +106,10 @@ export default function RootLayout() {
             name="why"
             options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
           />
+          <Stack.Screen
+            name="plan-item-add"
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+          />
         </Stack>
         <StatusBar style="light" />
       </ThemeProvider>

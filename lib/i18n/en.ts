@@ -99,6 +99,12 @@ export default {
       lean: 'Lean phase',
       travel: 'Travel mode',
     },
+    newItem: 'New item',
+    itemTitle: 'Title',
+    itemTitlePlaceholder: 'Stretch · 5 minutes',
+    duration: 'Duration',
+    category: 'Category',
+    addCustom: 'Add custom item',
     insights: {
       skinUp: 'Skin scores up week-over-week',
       sleepStable: 'Average sleep stable above 7h',

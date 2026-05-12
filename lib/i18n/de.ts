@@ -99,6 +99,12 @@ export default {
       lean: 'Definitionsphase',
       travel: 'Reisemodus',
     },
+    newItem: 'Neues Item',
+    itemTitle: 'Titel',
+    itemTitlePlaceholder: 'Dehnen · 5 Minuten',
+    duration: 'Dauer',
+    category: 'Kategorie',
+    addCustom: 'Eigenes Item hinzufügen',
     insights: {
       skinUp: 'Hautwerte steigen Woche für Woche',
       sleepStable: 'Durchschnittsschlaf stabil über 7 h',

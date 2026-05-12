@@ -52,9 +52,36 @@ export async function setActiveTemplate(v: PlanTemplate): Promise<void> {
   await setJSON(TEMPLATE_KEY, v);
 }
 
+const CUSTOM_KEY = 'plan.custom';
+
+export async function getCustomItems(): Promise<PlanItem[]> {
+  return getJSON<PlanItem[]>(CUSTOM_KEY, []);
+}
+
+export async function addCustomItem(item: Omit<PlanItem, 'id'>): Promise<PlanItem> {
+  const list = await getJSON<PlanItem[]>(CUSTOM_KEY, []);
+  const next: PlanItem = {
+    ...item,
+    id: `c_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`,
+  };
+  list.push(next);
+  list.sort((a, b) => a.time.localeCompare(b.time));
+  await setJSON(CUSTOM_KEY, list);
+  return next;
+}
+
+export async function deleteCustomItem(id: string): Promise<void> {
+  const list = await getJSON<PlanItem[]>(CUSTOM_KEY, []);
+  await setJSON(CUSTOM_KEY, list.filter((x) => x.id !== id));
+}
+
+/** Active plan = template items + any user-added custom items, sorted by time. */
 export async function getActivePlan(): Promise<PlanItem[]> {
   const tpl = await getActiveTemplate();
-  return PLAN_TEMPLATES[tpl];
+  const custom = await getCustomItems();
+  const merged = [...PLAN_TEMPLATES[tpl], ...custom];
+  merged.sort((a, b) => a.time.localeCompare(b.time));
+  return merged;
 }
 
 export async function getCompletion(): Promise<PlanCompletion> {

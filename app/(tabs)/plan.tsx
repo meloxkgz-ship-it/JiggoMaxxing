@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -11,6 +11,7 @@ import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useT } from '@/lib/i18n';
 import { todayKey } from '@/lib/journal';
 import {
+  deleteCustomItem,
   getActivePlan,
   getActiveTemplate,
   getCompletion,
@@ -151,17 +152,41 @@ export default function PlanScreen() {
           <Card variant="elevated" style={{ padding: 0 }}>
             {items.map((it, i) => {
               const done = doneToday.includes(it.id);
+              const isCustom = it.id.startsWith('c_');
               return (
                 <Pressable
                   key={it.id}
                   onPress={() => onToggle(it.id)}
+                  onLongPress={
+                    isCustom
+                      ? () =>
+                          Alert.alert(
+                            t('common.delete'),
+                            it.title,
+                            [
+                              { text: t('common.cancel'), style: 'cancel' },
+                              {
+                                text: t('common.delete'),
+                                style: 'destructive',
+                                onPress: async () => {
+                                  await deleteCustomItem(it.id);
+                                  refresh();
+                                },
+                              },
+                            ],
+                          )
+                      : undefined
+                  }
                   style={[
                     styles.row,
                     i !== items.length - 1 && styles.rowDivider,
                   ]}>
                   <Text style={styles.rowTime}>{it.time}</Text>
                   <View style={{ flex: 1, marginLeft: spacing.md }}>
-                    <Text style={[styles.rowTitle, done && styles.rowTitleDone]}>{it.title}</Text>
+                    <Text style={[styles.rowTitle, done && styles.rowTitleDone]}>
+                      {it.title}
+                      {isCustom && <Text style={styles.customMark}>  ·</Text>}
+                    </Text>
                     <Text style={styles.rowMeta}>{it.category} · {it.duration}</Text>
                   </View>
                   <View style={[styles.check, done && styles.checkDone]}>
@@ -170,6 +195,12 @@ export default function PlanScreen() {
                 </Pressable>
               );
             })}
+            <Pressable
+              style={styles.addCustomRow}
+              onPress={() => router.push('/plan-item-add' as any)}>
+              <Ionicons name="add-circle-outline" size={18} color={colors.bronze} />
+              <Text style={styles.addCustomText}>{t('plan.addCustom')}</Text>
+            </Pressable>
           </Card>
         </View>
 
@@ -355,4 +386,12 @@ const styles = StyleSheet.create({
   },
   heatRow: { flexDirection: 'row', gap: 4, marginTop: spacing.sm },
   heatCell: { flex: 1, aspectRatio: 0.6, borderRadius: 3 },
+
+  addCustomRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingVertical: spacing.md, paddingHorizontal: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.hairline,
+  },
+  addCustomText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 13 },
+  customMark: { color: colors.bronze, fontFamily: type.family.sansBold, fontSize: 14 },
 });
