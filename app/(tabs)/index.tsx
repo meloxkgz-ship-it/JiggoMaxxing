@@ -280,7 +280,12 @@ export default function HomeHubScreen() {
 
         {/* Stats overview */}
         <View style={styles.section}>
-          <Eyebrow>{t('home.stats')}</Eyebrow>
+          <View style={styles.sectionHead}>
+            <Eyebrow>{t('home.stats')}</Eyebrow>
+            <Pressable hitSlop={8} onPress={() => router.push('/insights' as any)}>
+              <Text style={styles.sectionLink}>{t('home.seeInsights')} ›</Text>
+            </Pressable>
+          </View>
           <View style={styles.statsGrid}>
             <StatTile
               icon="sparkles"

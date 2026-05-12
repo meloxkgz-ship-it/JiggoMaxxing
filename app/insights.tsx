@@ -1,0 +1,268 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Stack, router } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { Eyebrow } from '@/components/Eyebrow';
+import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
+import { useT } from '@/lib/i18n';
+import { getStreak, listEntries, todayKey } from '@/lib/journal';
+import { getActivePlan, getCompletion } from '@/lib/plan';
+import { getNudgeStreak } from '@/lib/nudge';
+import { listScans } from '@/lib/scan';
+import { JournalEntry, ScanResult } from '@/lib/types';
+
+function lastNDates(n: number): string[] {
+  const out: string[] = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+}
+
+export default function InsightsScreen() {
+  const t = useT();
+  const [scans, setScans] = useState<ScanResult[]>([]);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [nudgeStreak, setNudgeStreak] = useState(0);
+  const [journalStreak, setJournalStreak] = useState(0);
+  const [planRatios, setPlanRatios] = useState<number[]>([]);
+  const [topMood, setTopMood] = useState<string | null>(null);
+  const [bestDim, setBestDim] = useState<{ name: string; v: number } | null>(null);
+  const [weakDim, setWeakDim] = useState<{ name: string; v: number } | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const [scList, jeList, ns, js, comp, plan] = await Promise.all([
+        listScans(),
+        listEntries(),
+        getNudgeStreak(),
+        getStreak(),
+        getCompletion(),
+        getActivePlan(),
+      ]);
+      setScans(scList);
+      setEntries(jeList);
+      setNudgeStreak(ns);
+      setJournalStreak(js);
+      const dates = lastNDates(28);
+      const total = Math.max(1, plan.length);
+      setPlanRatios(dates.map((d) => Math.min(1, (comp[d] ?? []).length / total)));
+
+      // Top mood from last 30 entries
+      const counts: Record<string, number> = {};
+      for (const e of jeList.slice(0, 30)) {
+        if (e.mood) counts[e.mood] = (counts[e.mood] ?? 0) + 1;
+      }
+      const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+      setTopMood(top ?? null);
+
+      // Best/worst dimension across last 5 scans (averaged)
+      const dimAgg: Record<string, number[]> = {};
+      for (const s of scList.slice(0, 5)) {
+        for (const [k, v] of Object.entries(s.dimensions)) {
+          (dimAgg[k] ??= []).push(v);
+        }
+      }
+      const avgs = Object.entries(dimAgg).map(([k, vs]) => ({
+        name: k,
+        v: Math.round(vs.reduce((a, b) => a + b, 0) / vs.length),
+      }));
+      if (avgs.length) {
+        avgs.sort((a, b) => b.v - a.v);
+        setBestDim(avgs[0]);
+        setWeakDim(avgs[avgs.length - 1]);
+      }
+    })();
+  }, []);
+
+  const recentScores = scans.slice(0, 10).map((s) => s.overall).reverse();
+  const last14Entries = lastNDates(14).map((d) => entries.filter((e) => e.date === d).length);
+
+  return (
+    <SafeAreaView edges={['top']} style={styles.root}>
+      <Stack.Screen options={{ title: t('home.insights') }} />
+      <View style={styles.header}>
+        <Pressable hitSlop={10} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
+        </Pressable>
+        <Text style={styles.headerTitle}>{t('home.insights')}</Text>
+        <View style={{ width: 26 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Streaks */}
+        <View style={styles.row}>
+          <BigStat label={t('home.statsNudge')} value={nudgeStreak.toString()} unit={t('home.statsDays')} />
+          <BigStat label={t('home.statsJournal')} value={journalStreak.toString()} unit={t('home.statsDays')} />
+        </View>
+
+        {/* Edge over time */}
+        <Section title={t('home.insightsTrend')}>
+          {recentScores.length === 0 ? (
+            <EmptyHint text={t('home.insightsEmpty')} />
+          ) : (
+            <View style={styles.lineRow}>
+              {recentScores.map((v, i) => {
+                const min = Math.min(...recentScores);
+                const max = Math.max(...recentScores);
+                const range = Math.max(8, max - min);
+                const h = ((v - min) / range) * 70 + 8;
+                return (
+                  <View key={i} style={styles.lineCol}>
+                    <Text style={styles.lineVal}>{v}</Text>
+                    <View style={[styles.lineBar, { height: h, backgroundColor: i === recentScores.length - 1 ? colors.bronze : colors.surfaceMuted }]} />
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </Section>
+
+        {/* Plan adherence */}
+        <Section title={t('home.insightsAdherence')}>
+          <View style={styles.heatRow}>
+            {planRatios.map((r, i) => {
+              const alpha = r === 0 ? 0.12 : 0.3 + r * 0.7;
+              return (
+                <View
+                  key={i}
+                  style={[
+                    styles.heatCell,
+                    { backgroundColor: r === 0 ? colors.surfaceMuted : `rgba(176,138,90,${alpha})` },
+                  ]}
+                />
+              );
+            })}
+          </View>
+        </Section>
+
+        {/* Journal entry count */}
+        <Section title={t('home.insightsJournal')}>
+          <View style={styles.lineRow}>
+            {last14Entries.map((cnt, i) => {
+              const h = Math.min(64, cnt * 22) + 4;
+              return (
+                <View key={i} style={styles.lineCol}>
+                  <View style={[styles.lineBar, { height: h, backgroundColor: cnt > 0 ? colors.bronze : colors.surfaceMuted }]} />
+                </View>
+              );
+            })}
+          </View>
+        </Section>
+
+        {/* Dimensions */}
+        {bestDim && weakDim && (
+          <View style={styles.row}>
+            <View style={[styles.miniCard, styles.miniCardGood]}>
+              <Eyebrow>{t('home.insightsBestDim')}</Eyebrow>
+              <Text style={styles.miniName}>{t(`scan.dimensions.${bestDim.name}` as any)}</Text>
+              <Text style={styles.miniValue}>{bestDim.v}</Text>
+            </View>
+            <View style={[styles.miniCard, styles.miniCardWatch]}>
+              <Eyebrow>{t('home.insightsWeakestDim')}</Eyebrow>
+              <Text style={styles.miniName}>{t(`scan.dimensions.${weakDim.name}` as any)}</Text>
+              <Text style={styles.miniValue}>{weakDim.v}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Top mood */}
+        {topMood && (
+          <View style={styles.moodCard}>
+            <Eyebrow>{t('home.insightsTopMood')}</Eyebrow>
+            <Text style={styles.moodValue}>{t(`journal.moods.${topMood}` as any)}</Text>
+          </View>
+        )}
+
+        <View style={{ height: 60 }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <Eyebrow>{title}</Eyebrow>
+      <View style={{ marginTop: spacing.sm }}>{children}</View>
+    </View>
+  );
+}
+
+function BigStat({ label, value, unit }: { label: string; value: string; unit: string }) {
+  return (
+    <View style={styles.bigStat}>
+      <Text style={styles.bigStatLabel}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+        <Text style={styles.bigStatValue}>{value}</Text>
+        {unit && <Text style={styles.bigStatUnit}>{unit}</Text>}
+      </View>
+    </View>
+  );
+}
+
+function EmptyHint({ text }: { text: string }) {
+  return <Text style={styles.empty}>{text}</Text>;
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.ink },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
+  },
+  headerTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 16 },
+
+  content: { padding: spacing.xl, gap: spacing.lg },
+  row: { flexDirection: 'row', gap: spacing.md },
+
+  bigStat: {
+    flex: 1, padding: spacing.lg, borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.22)',
+    gap: 6,
+  },
+  bigStatLabel: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10.5, letterSpacing: 0.5, textTransform: 'uppercase' },
+  bigStatValue: { color: colors.bronze, fontFamily: type.family.sansBlack, fontSize: 38, letterSpacing: type.letterSpacing.tighter },
+  bigStatUnit: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 14, marginLeft: 4, marginBottom: 8 },
+
+  section: {
+    padding: spacing.lg, borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    gap: spacing.sm,
+  },
+  empty: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 13, paddingVertical: spacing.md },
+
+  lineRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 100 },
+  lineCol: { flex: 1, alignItems: 'center', gap: 4 },
+  lineVal: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 9, letterSpacing: 0.3 },
+  lineBar: { width: '70%', borderRadius: 3, minHeight: 4 },
+
+  heatRow: { flexDirection: 'row', gap: 4, height: 36 },
+  heatCell: { flex: 1, borderRadius: 3 },
+
+  miniCard: {
+    flex: 1,
+    padding: spacing.lg, borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    gap: 6,
+  },
+  miniCardGood: { borderColor: 'rgba(126,158,122,0.3)' },
+  miniCardWatch: { borderColor: 'rgba(176,88,79,0.3)' },
+  miniName: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13, marginTop: 4 },
+  miniValue: { color: colors.bronze, fontFamily: type.family.sansBlack, fontSize: 28, letterSpacing: type.letterSpacing.tight },
+
+  moodCard: {
+    padding: spacing.lg, borderRadius: radius.md,
+    backgroundColor: colors.bronzeOnBlack,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.25)',
+    gap: 4,
+  },
+  moodValue: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 20, letterSpacing: type.letterSpacing.tight, marginTop: 4 },
+});
