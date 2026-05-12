@@ -73,7 +73,7 @@ async function buildUserContext(): Promise<string> {
   return `${name}${goal} Current Edge breakdown — total ${edge.total}/100 (scan ${edge.scan}, journal-streak signal ${edge.journal}, nudge-streak signal ${edge.nudge}, plan-today ${edge.plan}). Use these only as background. Do not lecture about them. Do not turn them into a score-ranking.`.trim();
 }
 
-export async function sendToCoach(history: CoachTurn[]): Promise<string> {
+async function buildRequest(history: CoachTurn[], stream: boolean) {
   const apiKey = await getApiKey();
   if (!apiKey) {
     throw new Error(
@@ -82,15 +82,8 @@ export async function sendToCoach(history: CoachTurn[]): Promise<string> {
   }
   const userContext = await buildUserContext();
   const messages = history.map((t) => ({ role: t.role, content: t.content }));
-
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
+  return {
+    apiKey,
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 600,
@@ -99,7 +92,22 @@ export async function sendToCoach(history: CoachTurn[]): Promise<string> {
         { type: 'text', text: userContext },
       ],
       messages,
+      stream,
     }),
+  };
+}
+
+export async function sendToCoach(history: CoachTurn[]): Promise<string> {
+  const { apiKey, body } = await buildRequest(history, false);
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body,
   });
 
   if (!res.ok) {
@@ -115,6 +123,82 @@ export async function sendToCoach(history: CoachTurn[]): Promise<string> {
       .join('\n')
       .trim() || '';
   return text;
+}
+
+/**
+ * Streaming version — emits text deltas as they arrive. Falls back to
+ * non-streaming if the runtime doesn't support body.getReader().
+ */
+export async function streamToCoach(
+  history: CoachTurn[],
+  onDelta: (chunk: string) => void,
+): Promise<string> {
+  const { apiKey, body } = await buildRequest(history, true);
+  const res = await fetch(ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`Coach API ${res.status}: ${errText.slice(0, 200)}`);
+  }
+
+  const reader = (res.body as any)?.getReader?.();
+  if (!reader) {
+    // Fallback: read entire response, parse SSE post-hoc
+    const text = await res.text();
+    const full = parseSSE(text, onDelta);
+    return full;
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let assembled = '';
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() ?? '';
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const payload = line.slice(6).trim();
+      if (!payload || payload === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(payload);
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+          const chunk = evt.delta.text as string;
+          assembled += chunk;
+          onDelta(chunk);
+        }
+      } catch {}
+    }
+  }
+  return assembled.trim();
+}
+
+function parseSSE(raw: string, onDelta: (chunk: string) => void): string {
+  let assembled = '';
+  for (const line of raw.split('\n')) {
+    if (!line.startsWith('data: ')) continue;
+    const payload = line.slice(6).trim();
+    if (!payload || payload === '[DONE]') continue;
+    try {
+      const evt = JSON.parse(payload);
+      if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+        assembled += evt.delta.text;
+        onDelta(evt.delta.text);
+      }
+    } catch {}
+  }
+  return assembled.trim();
 }
 
 export const COACH_SUGGESTIONS = [

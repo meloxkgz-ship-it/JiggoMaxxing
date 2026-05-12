@@ -24,6 +24,7 @@ import {
   clearHistory,
   listHistory,
   sendToCoach,
+  streamToCoach,
 } from '@/lib/coach';
 import { useT } from '@/lib/i18n';
 import { getApiKey } from '@/lib/settings';
@@ -48,6 +49,7 @@ export default function CoachScreen() {
   const [turns, setTurns] = useState<CoachTurn[]>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [streaming, setStreaming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'chat' | 'topics'>('chat');
   const scrollRef = useRef<ScrollView>(null);
@@ -76,15 +78,27 @@ export default function CoachScreen() {
     setTurns(optimistic);
     await appendTurn(userTurn);
     setBusy(true);
+    setStreaming('');
     try {
-      const reply = await sendToCoach(optimistic);
-      const aiTurn: CoachTurn = { role: 'assistant', content: reply, ts: Date.now() };
+      let assembled = '';
+      try {
+        assembled = await streamToCoach(optimistic, (chunk) => {
+          assembled += chunk;
+          setStreaming(assembled);
+        });
+      } catch (streamErr) {
+        // Fallback to non-streaming on any streaming hiccup.
+        assembled = await sendToCoach(optimistic);
+      }
+      const aiTurn: CoachTurn = { role: 'assistant', content: assembled, ts: Date.now() };
       const next = [...optimistic, aiTurn];
       setTurns(next);
+      setStreaming(null);
       await appendTurn(aiTurn);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     } catch (e: any) {
       setError(e?.message ?? t('coach.error'));
+      setStreaming(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     } finally {
       setBusy(false);
@@ -193,7 +207,18 @@ export default function CoachScreen() {
               </View>
             ))}
 
-            {busy && (
+            {busy && streaming !== null && streaming.length > 0 && (
+              <View style={[styles.bubbleRow, styles.bubbleRowLeft]}>
+                <View style={styles.coachAvatar}>
+                  <Text style={styles.coachAvatarText}>JM</Text>
+                </View>
+                <View style={[styles.bubble, styles.bubbleAssistant]}>
+                  <CoachMessage text={streaming} />
+                </View>
+              </View>
+            )}
+
+            {busy && (streaming === null || streaming.length === 0) && (
               <View style={[styles.bubbleRow, styles.bubbleRowLeft]}>
                 <View style={styles.coachAvatar}>
                   <Text style={styles.coachAvatarText}>JM</Text>
