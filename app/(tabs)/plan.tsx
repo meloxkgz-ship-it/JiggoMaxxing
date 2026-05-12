@@ -8,8 +8,18 @@ import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
+import { useT } from '@/lib/i18n';
 import { todayKey } from '@/lib/journal';
-import { DEFAULT_PLAN, getCompletion, toggleComplete } from '@/lib/plan';
+import {
+  getActivePlan,
+  getActiveTemplate,
+  getCompletion,
+  PlanTemplate,
+  PLAN_TEMPLATES,
+  setActiveTemplate,
+  toggleComplete,
+} from '@/lib/plan';
+import { PlanItem } from '@/lib/types';
 
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -23,14 +33,24 @@ function lastNDates(n: number): string[] {
   return out;
 }
 
+const TEMPLATES: PlanTemplate[] = ['foundations', 'disciplined', 'lean', 'travel'];
+
 export default function PlanScreen() {
+  const t = useT();
+  const [tpl, setTpl] = useState<PlanTemplate>('foundations');
+  const [items, setItems] = useState<PlanItem[]>([]);
   const [doneToday, setDoneToday] = useState<string[]>([]);
   const [weekDone, setWeekDone] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
 
   const refresh = useCallback(async () => {
-    const map = await getCompletion();
-    const today = todayKey();
-    setDoneToday(map[today] ?? []);
+    const [t, plan, map] = await Promise.all([
+      getActiveTemplate(),
+      getActivePlan(),
+      getCompletion(),
+    ]);
+    setTpl(t);
+    setItems(plan);
+    setDoneToday(map[todayKey()] ?? []);
     const week = lastNDates(7);
     setWeekDone(week.map((d) => (map[d] ?? []).length));
   }, []);
@@ -44,23 +64,47 @@ export default function PlanScreen() {
     refresh();
   };
 
+  const switchTpl = async (v: PlanTemplate) => {
+    Haptics.selectionAsync().catch(() => {});
+    await setActiveTemplate(v);
+    setTpl(v);
+    setItems(PLAN_TEMPLATES[v]);
+  };
+
   const completed = doneToday.length;
-  const total = DEFAULT_PLAN.length;
-  const todayIdx = (new Date().getDay() + 6) % 7; // Mon=0
-  const ratio = completed / total;
+  const total = items.length || 1;
+  const todayIdx = (new Date().getDay() + 6) % 7;
+  const weekday = new Date().toLocaleDateString(undefined, { weekday: 'long' });
 
   return (
     <View style={styles.root}>
       <ScreenHeader
-        eyebrow={`Week · ${completed}/${total} today`}
-        title="Maxxing plan"
-        subtitle="Disciplined, not punishing. Skip a day, not a system."
+        eyebrow={t('plan.week', { done: completed, total })}
+        title={t('plan.title')}
+        subtitle={t('plan.subtitle')}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Template switcher */}
+        <View style={styles.field}>
+          <Eyebrow>{t('plan.template')}</Eyebrow>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
+            {TEMPLATES.map((x) => (
+              <Pressable
+                key={x}
+                onPress={() => switchTpl(x)}
+                style={[styles.chip, tpl === x && styles.chipActive]}>
+                <Text style={[styles.chipText, tpl === x && styles.chipTextActive]}>
+                  {t(`plan.templates.${x}`)}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
         <Card variant="elevated" style={{ gap: spacing.md }}>
           <View style={styles.weekHead}>
-            <Eyebrow>This week</Eyebrow>
-            <Text style={styles.completed}>{Math.round(ratio * 100)}% today</Text>
+            <Eyebrow>{t('plan.thisWeek')}</Eyebrow>
+            <Text style={styles.completed}>{Math.round((completed / total) * 100)}% {t('common.today').toLowerCase()}</Text>
           </View>
           <View style={styles.weekRow}>
             {WEEK_DAYS.map((d, i) => {
@@ -85,24 +129,24 @@ export default function PlanScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHead}>
-            <Eyebrow>Today · {new Date().toLocaleDateString(undefined, { weekday: 'long' })}</Eyebrow>
-            <Text style={styles.sectionLink}>{completed} of {total} done</Text>
+            <Eyebrow>{t('plan.todayLabel', { weekday })}</Eyebrow>
+            <Text style={styles.sectionLink}>{t('plan.todayDone', { done: completed, total })}</Text>
           </View>
           <Card variant="elevated" style={{ padding: 0 }}>
-            {DEFAULT_PLAN.map((t, i) => {
-              const done = doneToday.includes(t.id);
+            {items.map((it, i) => {
+              const done = doneToday.includes(it.id);
               return (
                 <Pressable
-                  key={t.id}
-                  onPress={() => onToggle(t.id)}
+                  key={it.id}
+                  onPress={() => onToggle(it.id)}
                   style={[
                     styles.row,
-                    i !== DEFAULT_PLAN.length - 1 && styles.rowDivider,
+                    i !== items.length - 1 && styles.rowDivider,
                   ]}>
-                  <Text style={styles.rowTime}>{t.time}</Text>
+                  <Text style={styles.rowTime}>{it.time}</Text>
                   <View style={{ flex: 1, marginLeft: spacing.md }}>
-                    <Text style={[styles.rowTitle, done && styles.rowTitleDone]}>{t.title}</Text>
-                    <Text style={styles.rowMeta}>{t.category} · {t.duration}</Text>
+                    <Text style={[styles.rowTitle, done && styles.rowTitleDone]}>{it.title}</Text>
+                    <Text style={styles.rowMeta}>{it.category} · {it.duration}</Text>
                   </View>
                   <View style={[styles.check, done && styles.checkDone]}>
                     {done && <Ionicons name="checkmark" size={14} color={colors.textOnBronze} />}
@@ -114,11 +158,11 @@ export default function PlanScreen() {
         </View>
 
         <View style={styles.section}>
-          <Eyebrow>Cycle 2 · what's working</Eyebrow>
+          <Eyebrow>{t('plan.insightsTitle')}</Eyebrow>
           <View style={styles.insights}>
-            <InsightLine icon="trending-up" color={colors.positive} text="Skin scores up 6% week-over-week" />
-            <InsightLine icon="time-outline" color={colors.bronze} text="Average sleep climbed past 7h" />
-            <InsightLine icon="warning-outline" color={colors.warning} text="Cardio missed twice — keep one easy day" />
+            <InsightLine icon="trending-up"     color={colors.positive} text={t('plan.insights.skinUp')} />
+            <InsightLine icon="time-outline"    color={colors.bronze}   text={t('plan.insights.sleepStable')} />
+            <InsightLine icon="warning-outline" color={colors.warning}  text={t('plan.insights.cardioMiss')} />
           </View>
         </View>
 
@@ -128,14 +172,9 @@ export default function PlanScreen() {
   );
 }
 
-function InsightLine({
-  icon,
-  color,
-  text,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
-  text: string;
+function InsightLine({ icon, color, text }: {
+  icon: keyof typeof import('@expo/vector-icons').Ionicons.glyphMap;
+  color: string; text: string;
 }) {
   return (
     <View style={styles.insightRow}>
@@ -148,6 +187,16 @@ function InsightLine({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ink },
   content: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.lg },
+
+  field: { gap: 6 },
+  chipsRow: { gap: 8, paddingVertical: 4 },
+  chip: {
+    paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline, backgroundColor: colors.surface,
+  },
+  chipActive: { backgroundColor: colors.bronze, borderColor: colors.bronze },
+  chipText: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 11.5, letterSpacing: 0.2 },
+  chipTextActive: { color: colors.textOnBronze },
 
   weekHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   completed: { color: colors.bronze, fontFamily: type.family.sansSemi, fontSize: 12, letterSpacing: 0.3 },
@@ -178,10 +227,8 @@ const styles = StyleSheet.create({
   insights: { gap: spacing.sm },
   insightRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.hairline,
+    padding: spacing.md, borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
     backgroundColor: colors.surface,
   },
   insightText: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 12.5, flex: 1 },

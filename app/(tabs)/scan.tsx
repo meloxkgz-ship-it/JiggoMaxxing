@@ -18,10 +18,12 @@ import {
 import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
+import { useT } from '@/lib/i18n';
 import { computeScan, listScans, saveScan } from '@/lib/scan';
 import { ScanResult } from '@/lib/types';
 
 export default function ScanScreen() {
+  const t = useT();
   const [scans, setScans] = useState<ScanResult[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -35,14 +37,14 @@ export default function ScanScreen() {
     if (busy) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     try {
-      let perm =
+      const perm =
         source === 'camera'
           ? await ImagePicker.requestCameraPermissionsAsync()
           : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) {
         Alert.alert(
-          source === 'camera' ? 'Camera access needed' : 'Photo access needed',
-          'JIGGO MAXXING processes scans locally — your photo never leaves the device. You can enable access in Settings.',
+          source === 'camera' ? t('scan.permCameraTitle') : t('scan.permLibraryTitle'),
+          t('scan.permBody'),
         );
         return;
       }
@@ -60,7 +62,6 @@ export default function ScanScreen() {
       const uri = result.assets?.[0]?.uri;
 
       setBusy(true);
-      // Pause briefly so the loading state is felt — feels deliberate.
       await new Promise((r) => setTimeout(r, 800));
       const computed = computeScan(uri);
       const saved = await saveScan(computed);
@@ -68,26 +69,26 @@ export default function ScanScreen() {
       setScans(await listScans());
       router.push({ pathname: '/scan-detail', params: { id: saved.id } } as any);
     } catch (e: any) {
-      Alert.alert('Scan failed', e?.message ?? 'Something went wrong.');
+      Alert.alert('Scan failed', e?.message ?? '');
     } finally {
       setBusy(false);
     }
   };
 
   const offer = () => {
-    Alert.alert('New scan', 'Use camera or pick from library?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Library', onPress: () => run('library') },
-      { text: 'Camera', onPress: () => run('camera'), style: 'default' },
+    Alert.alert(t('scan.askSource'), t('scan.askSourceBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('scan.library'), onPress: () => run('library') },
+      { text: t('scan.camera'),  onPress: () => run('camera'), style: 'default' },
     ]);
   };
 
   return (
     <View style={styles.root}>
       <ScreenHeader
-        eyebrow="Private · on‑device"
-        title="Max Scan"
-        subtitle="Photo never uploaded. No ratings. Trend signals across six private dimensions."
+        eyebrow={t('scan.eyebrow')}
+        title={t('scan.title')}
+        subtitle={t('scan.subtitle')}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <LinearGradient
@@ -110,20 +111,18 @@ export default function ScanScreen() {
             {busy && (
               <View style={styles.scanOverlay}>
                 <ActivityIndicator color={colors.bronze} size="large" />
-                <Text style={styles.scanOverlayText}>Reading dimensions…</Text>
+                <Text style={styles.scanOverlayText}>{t('scan.analysing')}</Text>
               </View>
             )}
           </View>
 
-          <View style={styles.ctaRow}>
-            <Pressable style={styles.cta} onPress={offer} disabled={busy}>
-              <Ionicons name="scan" size={16} color={colors.textOnBronze} />
-              <Text style={styles.ctaText}>{busy ? 'Analysing…' : latest ? 'New scan' : 'First scan'}</Text>
-            </Pressable>
-          </View>
+          <Pressable style={styles.cta} onPress={offer} disabled={busy}>
+            <Ionicons name="scan" size={16} color={colors.textOnBronze} />
+            <Text style={styles.ctaText}>{busy ? t('scan.analysing') : latest ? t('scan.newScan') : t('scan.firstScan')}</Text>
+          </Pressable>
 
           <Text style={styles.privacy}>
-            <Ionicons name="lock-closed" size={11} color={colors.bronze} /> Processed locally · never leaves device
+            <Ionicons name="lock-closed" size={11} color={colors.bronze} /> {t('scan.privacyNote')}
           </Text>
         </LinearGradient>
 
@@ -132,7 +131,7 @@ export default function ScanScreen() {
             onPress={() => router.push({ pathname: '/scan-detail', params: { id: latest.id } } as any)}
             style={styles.latestCard}>
             <View style={{ flex: 1 }}>
-              <Eyebrow>Last reading · {relativeTime(latest.createdAt)}</Eyebrow>
+              <Eyebrow>{t('scan.lastReading', { when: relativeTime(latest.createdAt, t) })}</Eyebrow>
               <Text style={styles.latestNote} numberOfLines={2}>{latest.insight}</Text>
             </View>
             <View style={styles.latestScoreWrap}>
@@ -145,12 +144,12 @@ export default function ScanScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHead}>
-            <Eyebrow>History</Eyebrow>
-            <Text style={styles.sectionMeta}>{scans.length} scans</Text>
+            <Eyebrow>{t('scan.history')}</Eyebrow>
+            <Text style={styles.sectionMeta}>{t('scan.historyCount', { count: scans.length })}</Text>
           </View>
           {scans.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyText}>No scans yet. Take your first to set a private baseline.</Text>
+              <Text style={styles.emptyText}>{t('scan.noScans')}</Text>
             </View>
           ) : (
             <View style={{ gap: spacing.sm }}>
@@ -183,12 +182,12 @@ export default function ScanScreen() {
   );
 }
 
-function relativeTime(ts: number) {
+function relativeTime(ts: number, t: (k: string, vars?: any) => string) {
   const diff = Date.now() - ts;
   if (diff < 60_000) return 'just now';
-  if (diff < 3600_000) return `${Math.round(diff / 60000)} min ago`;
-  if (diff < 86400_000) return `${Math.round(diff / 3600000)} h ago`;
-  return `${Math.round(diff / 86400000)} d ago`;
+  if (diff < 3600_000) return `${Math.round(diff / 60000)} min`;
+  if (diff < 86400_000) return `${Math.round(diff / 3600000)} h`;
+  return `${Math.round(diff / 86400000)} d`;
 }
 
 const styles = StyleSheet.create({
@@ -196,20 +195,12 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.lg },
 
   hero: {
-    borderRadius: radius.xl,
-    padding: spacing.xl,
-    alignItems: 'center',
-    gap: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(176,138,90,0.18)',
+    borderRadius: radius.xl, padding: spacing.xl, alignItems: 'center', gap: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.18)',
   },
   frame: {
-    width: 220,
-    height: 280,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
-    position: 'relative',
-    backgroundColor: '#0B0908',
+    width: 220, height: 280, borderRadius: radius.lg,
+    overflow: 'hidden', position: 'relative', backgroundColor: '#0B0908',
   },
   framePortrait: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   corner: { position: 'absolute', width: 22, height: 22, borderColor: colors.bronze },
@@ -220,34 +211,22 @@ const styles = StyleSheet.create({
   scanOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(8,7,6,0.78)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
+    alignItems: 'center', justifyContent: 'center', gap: spacing.md,
   },
   scanOverlayText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 12, letterSpacing: 0.5 },
 
-  ctaRow: { flexDirection: 'row', gap: spacing.md },
   cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.bronze,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: 13,
-    borderRadius: radius.pill,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.bronze, paddingHorizontal: spacing.xl, paddingVertical: 13, borderRadius: radius.pill,
   },
   ctaText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 14, letterSpacing: 0.2 },
   privacy: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12 },
 
   latestCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    padding: spacing.lg, borderRadius: radius.lg,
     backgroundColor: colors.surfaceElevated,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(176,138,90,0.22)',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.22)',
   },
   latestNote: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13, marginTop: 4, lineHeight: 19 },
   latestScoreWrap: { flexDirection: 'row', alignItems: 'flex-end' },
@@ -262,22 +241,15 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 13, lineHeight: 19 },
 
   histRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.hairline,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    padding: spacing.md, borderRadius: radius.md, backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
   },
   histThumb: {
-    width: 44, height: 44, borderRadius: 10,
-    overflow: 'hidden',
+    width: 44, height: 44, borderRadius: 10, overflow: 'hidden',
     backgroundColor: colors.surfaceMuted,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.hairline,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
   },
   histDate: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13 },
   histInsight: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 12, marginTop: 2 },

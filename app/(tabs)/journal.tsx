@@ -14,7 +14,8 @@ import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { deleteEntry, listEntries, relativeDate } from '@/lib/journal';
+import { useT } from '@/lib/i18n';
+import { deleteEntry, getStreak, listEntries, relativeDate } from '@/lib/journal';
 import { JournalEntry } from '@/lib/types';
 
 const MOOD_COLORS: Record<string, string> = {
@@ -26,31 +27,39 @@ const MOOD_COLORS: Record<string, string> = {
 };
 
 export default function JournalScreen() {
+  const t = useT();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [streak, setStreak] = useState(0);
 
   useFocusEffect(useCallback(() => {
-    (async () => setEntries(await listEntries()))();
+    (async () => {
+      setEntries(await listEntries());
+      setStreak(await getStreak());
+    })();
   }, []));
 
-  const weights = entries
-    .filter((e) => typeof e.weightKg === 'number')
-    .slice(0, 14)
-    .reverse();
+  const weights = entries.filter((e) => typeof e.weightKg === 'number').slice(0, 14).reverse();
   const latest = entries[0];
   const previous = entries[1];
-  const delta =
-    latest?.weightKg && previous?.weightKg
-      ? (latest.weightKg - previous.weightKg).toFixed(1)
-      : null;
+  const delta = latest?.weightKg && previous?.weightKg ? (latest.weightKg - previous.weightKg).toFixed(1) : null;
+
+  // Weekly mood
+  const last7 = entries.slice(0, 7);
+  const moodCounts = last7.reduce<Record<string, number>>((acc, e) => {
+    if (e.mood) acc[e.mood] = (acc[e.mood] ?? 0) + 1;
+    return acc;
+  }, {});
+  const topMood = Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
 
   const confirmDelete = (e: JournalEntry) => {
-    Alert.alert('Delete entry?', e.notes ? `"${e.notes.slice(0, 60)}…"` : 'This entry will be removed.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('journal.delete'), e.notes ? `"${e.notes.slice(0, 60)}…"` : '', [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete', style: 'destructive',
+        text: t('common.delete'), style: 'destructive',
         onPress: async () => {
           await deleteEntry(e.id);
           setEntries(await listEntries());
+          setStreak(await getStreak());
         },
       },
     ]);
@@ -59,22 +68,22 @@ export default function JournalScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader
-        eyebrow="Physique"
-        title="Journal"
-        subtitle="Track weight, mood, sleep, and your own notes — privately."
+        eyebrow={t('journal.eyebrow')}
+        title={t('journal.title')}
+        subtitle={t('journal.subtitle')}
       />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Card variant="elevated" style={{ gap: spacing.md }}>
           <View style={styles.metaRow}>
-            <Eyebrow>Weight · last 14</Eyebrow>
+            <Eyebrow>{t('journal.weightLabel')}</Eyebrow>
             {delta && (
               <Text style={Number(delta) <= 0 ? styles.deltaPos : styles.deltaNeg}>
-                {delta} kg
+                {delta} {t('common.units_kg')}
               </Text>
             )}
           </View>
           {weights.length === 0 ? (
-            <Text style={styles.emptySmall}>Log a weight to see your trend.</Text>
+            <Text style={styles.emptySmall}>{t('journal.empty')}</Text>
           ) : (
             <View style={styles.spark}>
               {weights.map((e, i) => {
@@ -96,29 +105,38 @@ export default function JournalScreen() {
             </View>
           )}
           <View style={styles.statsRow}>
-            <Stat label="Current" value={latest?.weightKg?.toFixed(1) ?? '—'} unit="kg" />
+            <Stat label={t('journal.current')} value={latest?.weightKg?.toFixed(1) ?? '—'} unit={t('common.units_kg')} />
             <Stat
-              label="Avg 7d"
+              label={t('journal.avg7d')}
               value={
                 entries.slice(0, 7).filter((e) => e.weightKg).length
                   ? (
-                      entries
-                        .slice(0, 7)
-                        .filter((e) => e.weightKg)
-                        .reduce((acc, e) => acc + e.weightKg!, 0) /
+                      entries.slice(0, 7).filter((e) => e.weightKg).reduce((acc, e) => acc + e.weightKg!, 0) /
                       entries.slice(0, 7).filter((e) => e.weightKg).length
                     ).toFixed(1)
                   : '—'
               }
-              unit="kg"
+              unit={t('common.units_kg')}
             />
-            <Stat label="Entries" value={entries.length.toString()} unit="" />
+            <Stat label={t('journal.streak')} value={streak.toString()} unit="" />
           </View>
         </Card>
 
+        {last7.length >= 3 && topMood && (
+          <View style={styles.reviewCard}>
+            <Eyebrow>{t('journal.review.title')}</Eyebrow>
+            <Text style={styles.reviewBody}>
+              {t('journal.review.body', {
+                count: last7.length,
+                mood: t(`journal.moods.${topMood}`),
+              })}
+            </Text>
+          </View>
+        )}
+
         <View style={styles.section}>
           <View style={styles.sectionHead}>
-            <Eyebrow>Entries</Eyebrow>
+            <Eyebrow>{t('journal.entriesTitle')}</Eyebrow>
             <Pressable hitSlop={8} onPress={() => router.push('/journal-entry' as any)}>
               <Ionicons name="add-circle" size={26} color={colors.bronze} />
             </Pressable>
@@ -126,15 +144,13 @@ export default function JournalScreen() {
 
           {entries.length === 0 && (
             <Card variant="outline" style={styles.empty}>
-              <Text style={styles.emptyTitle}>Nothing logged yet.</Text>
-              <Text style={styles.emptyBody}>
-                Tap the + above to log your first entry. Even one line counts.
-              </Text>
+              <Text style={styles.emptyTitle}>{t('journal.empty')}</Text>
+              <Text style={styles.emptyBody}>{t('journal.emptyBody')}</Text>
               <Pressable
                 style={styles.emptyCta}
                 onPress={() => router.push('/journal-entry' as any)}>
                 <Ionicons name="add" size={14} color={colors.textOnBronze} />
-                <Text style={styles.emptyCtaText}>New entry</Text>
+                <Text style={styles.emptyCtaText}>{t('journal.newEntry')}</Text>
               </Pressable>
             </Card>
           )}
@@ -146,7 +162,7 @@ export default function JournalScreen() {
                 <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                   {e.mood && (
                     <View style={[styles.moodPill, { borderColor: MOOD_COLORS[e.mood] }]}>
-                      <Text style={[styles.moodText, { color: MOOD_COLORS[e.mood] }]}>{e.mood}</Text>
+                      <Text style={[styles.moodText, { color: MOOD_COLORS[e.mood] }]}>{t(`journal.moods.${e.mood}`)}</Text>
                     </View>
                   )}
                   <Pressable hitSlop={8} onPress={() => confirmDelete(e)}>
@@ -159,13 +175,13 @@ export default function JournalScreen() {
                   {e.weightKg && (
                     <View style={styles.statChip}>
                       <Ionicons name="scale-outline" size={12} color={colors.bronze} />
-                      <Text style={styles.statChipText}>{e.weightKg.toFixed(1)} kg</Text>
+                      <Text style={styles.statChipText}>{e.weightKg.toFixed(1)} {t('common.units_kg')}</Text>
                     </View>
                   )}
                   {e.sleepHours && (
                     <View style={styles.statChip}>
                       <Ionicons name="moon-outline" size={12} color={colors.bronze} />
-                      <Text style={styles.statChipText}>{e.sleepHours} h</Text>
+                      <Text style={styles.statChipText}>{e.sleepHours} {t('common.units_h')}</Text>
                     </View>
                   )}
                 </View>
@@ -210,7 +226,17 @@ const styles = StyleSheet.create({
   statUnit: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11, marginLeft: 3, marginBottom: 4 },
   emptySmall: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 12, paddingVertical: spacing.md },
 
-  section: { gap: spacing.md, marginTop: spacing.md },
+  reviewCard: {
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.bronzeOnBlack,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.25)',
+    gap: 6,
+  },
+  reviewBody: { color: colors.textPrimary, fontFamily: type.family.sans, fontSize: 13.5, lineHeight: 20 },
+
+  section: { gap: spacing.md },
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
   empty: { gap: spacing.sm, alignItems: 'flex-start' },
@@ -229,8 +255,7 @@ const styles = StyleSheet.create({
   statChip: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 9, paddingVertical: 4,
-    borderRadius: radius.pill,
-    backgroundColor: colors.bronzeOnBlack,
+    borderRadius: radius.pill, backgroundColor: colors.bronzeOnBlack,
   },
   statChipText: { color: colors.textPrimary, fontFamily: type.family.sansMedium, fontSize: 11.5 },
   entryNote: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13.5, lineHeight: 20 },

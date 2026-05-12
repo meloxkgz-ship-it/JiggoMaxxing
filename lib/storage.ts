@@ -38,3 +38,12 @@ export async function listKeys(prefix = ''): Promise<string[]> {
     return [];
   }
 }
+
+/** Wipe every key under the JIGGO namespace. */
+export async function wipeAll(): Promise<void> {
+  try {
+    const all = await AsyncStorage.getAllKeys();
+    const ours = all.filter((k) => k.startsWith(NS));
+    await AsyncStorage.multiRemove(ours);
+  } catch {}
+}

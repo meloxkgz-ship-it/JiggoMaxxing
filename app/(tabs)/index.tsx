@@ -10,11 +10,12 @@ import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
+import { useT } from '@/lib/i18n';
 import { listEntries, todayKey } from '@/lib/journal';
-import { DEFAULT_PLAN, getCompletion } from '@/lib/plan';
+import { getActivePlan, getCompletion } from '@/lib/plan';
 import { listScans } from '@/lib/scan';
 import { getSettings } from '@/lib/settings';
-import { JournalEntry, ScanResult, Settings } from '@/lib/types';
+import { JournalEntry, PlanItem, ScanResult, Settings } from '@/lib/types';
 
 const PILLARS = ['Grooming', 'Physique', 'Style', 'Confidence'] as const;
 
@@ -24,22 +25,26 @@ function scoreToPillar(score: number): number {
 }
 
 export default function HomeHubScreen() {
+  const t = useT();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
+  const [plan, setPlan] = useState<PlanItem[]>([]);
   const [planDone, setPlanDone] = useState(0);
 
   useFocusEffect(useCallback(() => {
     (async () => {
-      const [s, sc, je, pc] = await Promise.all([
+      const [s, sc, je, pc, pp] = await Promise.all([
         getSettings(),
         listScans(),
         listEntries(),
         getCompletion(),
+        getActivePlan(),
       ]);
       setSettings(s);
       setScan(sc[0] ?? null);
       setJournal(je);
+      setPlan(pp);
       setPlanDone((pc[todayKey()] ?? []).length);
     })();
   }, []));
@@ -47,7 +52,7 @@ export default function HomeHubScreen() {
   const greeting = (() => {
     const h = new Date().getHours();
     const name = settings?.name?.split(' ')[0];
-    const time = h < 12 ? 'Morning' : h < 18 ? 'Afternoon' : 'Evening';
+    const time = t(h < 12 ? 'greeting.morning' : h < 18 ? 'greeting.afternoon' : 'greeting.evening');
     return name ? `${time}, ${name}.` : `${time}.`;
   })();
 
@@ -78,7 +83,7 @@ export default function HomeHubScreen() {
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Pressable style={styles.iconBtn} onPress={() => router.push('/settings' as any)}>
               <Ionicons name="lock-closed" size={14} color={colors.bronze} />
-              <Text style={styles.iconBtnText}>Private</Text>
+              <Text style={styles.iconBtnText}>{t('common.private')}</Text>
             </Pressable>
             <Pressable
               style={styles.settingsBtn}
@@ -92,8 +97,8 @@ export default function HomeHubScreen() {
         {/* Greeting */}
         <View style={styles.header}>
           <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</Eyebrow>
-          <Text style={styles.displayTitle}>Build your{'\n'}edge.</Text>
-          <Text style={styles.tagline}>{greeting} Insight, not judgement.</Text>
+          <Text style={styles.displayTitle}>{t('app.tagline').split('.')[0]}.</Text>
+          <Text style={styles.tagline}>{greeting} {t('app.motto')}</Text>
         </View>
 
         {/* Hero — edge index */}
@@ -104,12 +109,12 @@ export default function HomeHubScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.hero}>
             <View style={styles.heroTop}>
-              <Eyebrow>Edge Index</Eyebrow>
+              <Eyebrow>{t('home.edgeIndex')}</Eyebrow>
               <Pressable
                 onPress={() => router.push('/scan' as any)}
                 style={styles.heroLink}>
                 <Text style={styles.heroLinkText}>
-                  {recentScanRun ? `Scan · ${recentScanRun}` : 'No scan yet'}
+                  {recentScanRun ? t('home.scanOn', { date: recentScanRun }) : t('home.noScanYet')}
                 </Text>
                 <Ionicons name="chevron-forward" size={12} color={colors.textTertiary} />
               </Pressable>
@@ -119,7 +124,7 @@ export default function HomeHubScreen() {
               {overall !== null && <Text style={styles.heroOutOf}>/100</Text>}
             </View>
             <Text style={styles.heroNote}>
-              {scan?.insight ?? 'Take your first scan to set a private baseline. Nothing leaves your device.'}
+              {scan?.insight ?? t('home.edgeIndexEmpty')}
             </Text>
 
             <View style={styles.pillarsRow}>
@@ -142,14 +147,14 @@ export default function HomeHubScreen() {
         {/* Today */}
         <View style={styles.section}>
           <View style={styles.sectionHead}>
-            <Eyebrow>Today</Eyebrow>
+            <Eyebrow>{t('home.todaySection')}</Eyebrow>
             <Pressable hitSlop={8} onPress={() => router.push('/plan' as any)}>
-              <Text style={styles.sectionLink}>View plan ›</Text>
+              <Text style={styles.sectionLink}>{t('home.viewPlan')}</Text>
             </Pressable>
           </View>
 
           <Card variant="elevated" style={styles.todayCard}>
-            {DEFAULT_PLAN.slice(0, 3).map((a, i) => (
+            {plan.slice(0, 3).map((a, i) => (
               <Pressable
                 key={a.id}
                 onPress={() => router.push('/plan' as any)}
@@ -177,13 +182,13 @@ export default function HomeHubScreen() {
             ))}
             <View style={styles.todayFooter}>
               <Text style={styles.todayFooterText}>
-                {planDone} of {DEFAULT_PLAN.length} done today
+                {t('home.todayDone', { done: planDone, total: plan.length || 1 })}
               </Text>
               <View style={styles.progressTrack}>
                 <View
                   style={[
                     styles.progressFill,
-                    { width: `${(planDone / DEFAULT_PLAN.length) * 100}%` },
+                    { width: `${(planDone / Math.max(1, plan.length)) * 100}%` },
                   ]}
                 />
               </View>
@@ -193,18 +198,18 @@ export default function HomeHubScreen() {
 
         {/* Quick actions */}
         <View style={styles.section}>
-          <Eyebrow>Capture</Eyebrow>
+          <Eyebrow>{t('home.capture')}</Eyebrow>
           <View style={styles.quickRow}>
             <QuickAction
               icon="scan-outline"
-              title="Max Scan"
-              subtitle="On‑device · 6 dimensions"
+              title={t('home.quickScan')}
+              subtitle={t('home.quickScanSub')}
               onPress={() => router.push('/scan' as any)}
             />
             <QuickAction
               icon="create-outline"
-              title="Journal entry"
-              subtitle="Weight · mood · notes"
+              title={t('home.quickJournal')}
+              subtitle={t('home.quickJournalSub')}
               onPress={() => router.push('/journal-entry' as any)}
             />
           </View>
@@ -214,9 +219,9 @@ export default function HomeHubScreen() {
         {lastJournal && (
           <View style={styles.section}>
             <View style={styles.sectionHead}>
-              <Eyebrow>Latest journal</Eyebrow>
+              <Eyebrow>{t('home.latestJournal')}</Eyebrow>
               <Pressable hitSlop={8} onPress={() => router.push('/journal' as any)}>
-                <Text style={styles.sectionLink}>All entries ›</Text>
+                <Text style={styles.sectionLink}>{t('common.seeAll')} ›</Text>
               </Pressable>
             </View>
             <Pressable
@@ -225,18 +230,18 @@ export default function HomeHubScreen() {
               {(lastJournal.weightKg || lastJournal.sleepHours) && (
                 <View style={styles.journalStats}>
                   {lastJournal.weightKg && (
-                    <Text style={styles.journalStat}>{lastJournal.weightKg.toFixed(1)} kg</Text>
+                    <Text style={styles.journalStat}>{lastJournal.weightKg.toFixed(1)} {t('common.units_kg')}</Text>
                   )}
                   {lastJournal.sleepHours && (
-                    <Text style={styles.journalStat}>{lastJournal.sleepHours} h sleep</Text>
+                    <Text style={styles.journalStat}>{lastJournal.sleepHours} {t('common.units_h')} {t('journal.sleep').toLowerCase().replace(/[()]|h/g, '').trim()}</Text>
                   )}
-                  {lastJournal.mood && <Text style={styles.journalMood}>{lastJournal.mood}</Text>}
+                  {lastJournal.mood && <Text style={styles.journalMood}>{t(`journal.moods.${lastJournal.mood}`)}</Text>}
                 </View>
               )}
               {lastJournal.notes ? (
                 <Text style={styles.journalNote} numberOfLines={3}>{lastJournal.notes}</Text>
               ) : (
-                <Text style={[styles.journalNote, { color: colors.textTertiary }]}>No notes.</Text>
+                <Text style={[styles.journalNote, { color: colors.textTertiary }]}>{t('home.noJournalNotes')}</Text>
               )}
             </Pressable>
           </View>
@@ -248,15 +253,11 @@ export default function HomeHubScreen() {
             style={styles.coachCard}
             onPress={() => router.push('/coach' as any)}>
             <View style={{ flex: 1 }}>
-              <Eyebrow>Coach</Eyebrow>
-              <Text style={styles.coachTitle}>
-                Talk to your{'\n'}private coach.
-              </Text>
-              <Text style={styles.coachBody}>
-                Personalised routines, fit feedback, discipline frameworks. Never shaming, never rating.
-              </Text>
+              <Eyebrow>{t('coach.title')}</Eyebrow>
+              <Text style={styles.coachTitle}>{t('home.coachTitle')}</Text>
+              <Text style={styles.coachBody}>{t('home.coachBody')}</Text>
               <View style={styles.coachCta}>
-                <Text style={styles.coachCtaText}>Open coach</Text>
+                <Text style={styles.coachCtaText}>{t('home.openCoach')}</Text>
                 <Ionicons name="arrow-forward" size={14} color={colors.textOnBronze} />
               </View>
             </View>

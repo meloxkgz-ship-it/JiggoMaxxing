@@ -3,19 +3,21 @@ import { Ionicons } from '@expo/vector-icons';
 import { StyleSheet, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { colors, radius, type } from '@/constants/jiggo-theme';
+import { useT } from '@/lib/i18n';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TABS: { name: string; title: string; icon: IoniconName; iconFocused: IoniconName }[] = [
-  { name: 'index',   title: 'Home',    icon: 'grid-outline',        iconFocused: 'grid' },
-  { name: 'plan',    title: 'Plan',    icon: 'calendar-outline',    iconFocused: 'calendar' },
-  { name: 'scan',    title: 'Scan',    icon: 'scan-outline',        iconFocused: 'scan' },
-  { name: 'journal', title: 'Journal', icon: 'pulse-outline',       iconFocused: 'pulse' },
-  { name: 'style',   title: 'Style',   icon: 'shirt-outline',       iconFocused: 'shirt' },
-  { name: 'coach',   title: 'Coach',   icon: 'sparkles-outline',    iconFocused: 'sparkles' },
+const TABS: { name: string; key: string; icon: IoniconName; iconFocused: IoniconName }[] = [
+  { name: 'index',   key: 'home',    icon: 'grid-outline',     iconFocused: 'grid' },
+  { name: 'plan',    key: 'plan',    icon: 'calendar-outline', iconFocused: 'calendar' },
+  { name: 'scan',    key: 'scan',    icon: 'scan-outline',     iconFocused: 'scan' },
+  { name: 'journal', key: 'journal', icon: 'pulse-outline',    iconFocused: 'pulse' },
+  { name: 'style',   key: 'style',   icon: 'shirt-outline',    iconFocused: 'shirt' },
+  { name: 'coach',   key: 'coach',   icon: 'sparkles-outline', iconFocused: 'sparkles' },
 ];
 
 export default function TabsLayout() {
+  const t = useT();
   return (
     <Tabs
       screenOptions={{
@@ -37,14 +39,14 @@ export default function TabsLayout() {
         ),
         tabBarItemStyle: { paddingTop: 6 },
       }}>
-      {TABS.map((t) => (
+      {TABS.map((tab) => (
         <Tabs.Screen
-          key={t.name}
-          name={t.name}
+          key={tab.name}
+          name={tab.name}
           options={{
-            title: t.title,
+            title: t(`tabs.${tab.key}`),
             tabBarIcon: ({ color, focused }) => (
-              <Ionicons name={focused ? t.iconFocused : t.icon} size={20} color={color} />
+              <Ionicons name={focused ? tab.iconFocused : tab.icon} size={20} color={color} />
             ),
           }}
         />

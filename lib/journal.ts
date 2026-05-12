@@ -40,6 +40,23 @@ export function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Compute consecutive-day streak ending today. */
+export async function getStreak(): Promise<number> {
+  const list = await listEntries();
+  if (list.length === 0) return 0;
+  const dates = new Set(list.map((e) => e.date));
+  let streak = 0;
+  const d = new Date();
+  for (;;) {
+    const key = d.toISOString().slice(0, 10);
+    if (dates.has(key)) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else break;
+  }
+  return streak;
+}
+
 export function relativeDate(iso: string): string {
   const t = new Date(iso + 'T00:00:00').getTime();
   const today = new Date(todayKey() + 'T00:00:00').getTime();

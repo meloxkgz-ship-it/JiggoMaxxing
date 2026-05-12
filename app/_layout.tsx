@@ -13,6 +13,7 @@ import {
   Inter_900Black,
 } from '@expo-google-fonts/inter';
 import { colors } from '@/constants/jiggo-theme';
+import { LanguageProvider } from '@/lib/i18n';
 import { getSettings } from '@/lib/settings';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -67,29 +68,39 @@ export default function RootLayout() {
   if (!fontsLoaded || !bootstrapped) return null;
 
   return (
-    <ThemeProvider value={JiggoDarkTheme}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.ink },
-          animation: 'fade',
-        }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="onboarding" options={{ animation: 'none' }} />
-        <Stack.Screen
-          name="settings"
-          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-        />
-        <Stack.Screen
-          name="journal-entry"
-          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-        />
-        <Stack.Screen
-          name="scan-detail"
-          options={{ presentation: 'card', animation: 'slide_from_right' }}
-        />
-      </Stack>
-      <StatusBar style="light" />
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider value={JiggoDarkTheme}>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.ink },
+            animation: 'fade',
+          }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="onboarding" options={{ animation: 'none' }} />
+          <Stack.Screen
+            name="settings"
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+          />
+          <Stack.Screen
+            name="journal-entry"
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+          />
+          <Stack.Screen
+            name="closet-add"
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+          />
+          <Stack.Screen
+            name="builder"
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+          />
+          <Stack.Screen
+            name="scan-detail"
+            options={{ presentation: 'card', animation: 'slide_from_right' }}
+          />
+        </Stack>
+        <StatusBar style="light" />
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
