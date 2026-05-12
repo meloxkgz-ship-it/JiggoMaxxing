@@ -398,6 +398,7 @@ export type SavedOutfit = {
   archetype: Archetype;
   overall: number;
   savedAt: number;
+  name?: string;
 };
 
 export async function listSavedOutfits(): Promise<SavedOutfit[]> {
@@ -405,7 +406,7 @@ export async function listSavedOutfits(): Promise<SavedOutfit[]> {
   return [...list].sort((a, b) => b.savedAt - a.savedAt);
 }
 
-export async function saveOutfit(o: Outfit): Promise<SavedOutfit> {
+export async function saveOutfit(o: Outfit, name?: string): Promise<SavedOutfit> {
   const list = await getJSON<SavedOutfit[]>(SAVED_KEY, []);
   const saved: SavedOutfit = {
     id: `so_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`,
@@ -414,9 +415,10 @@ export async function saveOutfit(o: Outfit): Promise<SavedOutfit> {
     archetype: o.archetype,
     overall: o.overall,
     savedAt: Date.now(),
+    name: name?.trim() || undefined,
   };
   list.unshift(saved);
-  await setJSON(SAVED_KEY, list.slice(0, 50)); // cap
+  await setJSON(SAVED_KEY, list.slice(0, 50));
   return saved;
 }
 

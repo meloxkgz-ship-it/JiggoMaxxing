@@ -273,6 +273,8 @@ export default {
     buildFromLook: 'Aus meinem Schrank bauen',
     saveOutfit: 'Outfit speichern',
     saved: 'Gespeichert',
+    nameOutfit: 'Outfit benennen',
+    nameOutfitPh: 'Creme Leinen auf Espresso',
   },
   coach: {
     title: 'Coach',

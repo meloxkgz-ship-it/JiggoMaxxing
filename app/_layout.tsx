@@ -1,4 +1,5 @@
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
+import * as Notifications from 'expo-notifications';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -64,6 +65,18 @@ export default function RootLayout() {
       router.replace('/onboarding' as any);
     }
   }, [navState?.key, onboarded, segments]);
+
+  // Tap on the daily-nudge notification → land on Home
+  useEffect(() => {
+    if (!navState?.key) return;
+    const sub = Notifications.addNotificationResponseReceivedListener((resp) => {
+      const data = resp.notification.request.content.data;
+      if (data?.kind === 'daily-nudge') {
+        router.replace('/(tabs)' as any);
+      }
+    });
+    return () => sub.remove();
+  }, [navState?.key]);
 
   if (!fontsLoaded || !bootstrapped) return null;
 

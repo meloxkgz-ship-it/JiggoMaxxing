@@ -273,6 +273,8 @@ export default {
     buildFromLook: 'Build this from my closet',
     saveOutfit: 'Save outfit',
     saved: 'Saved',
+    nameOutfit: 'Name this outfit',
+    nameOutfitPh: 'Cream linen on espresso',
   },
   coach: {
     title: 'Coach',

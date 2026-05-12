@@ -223,6 +223,7 @@ function SavedView({
             ))}
           </View>
           <View style={{ flex: 1 }}>
+            {s.name ? <Text style={styles.savedName}>{s.name}</Text> : null}
             <Text style={styles.savedTitle}>
               {t(`style.archetypes.${s.archetype}`)} · {t(`style.occasions.${s.occasion}`)}
             </Text>
@@ -396,6 +397,7 @@ const styles = StyleSheet.create({
     width: 26, height: 26, borderRadius: 13,
     borderWidth: 1.2, borderColor: colors.surface,
   },
+  savedName: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14, marginBottom: 2 },
   savedTitle: { color: colors.bronze, fontFamily: type.family.sansSemi, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase' },
   savedMeta: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12, marginTop: 2 },
   savedScore: { color: colors.textPrimary, fontFamily: type.family.sansBlack, fontSize: 22, letterSpacing: type.letterSpacing.tight },

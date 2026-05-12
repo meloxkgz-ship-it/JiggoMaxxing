@@ -5,10 +5,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,11 +55,14 @@ export default function BuilderScreen() {
     setItems(shuffled);
   };
 
+  const [nameDraft, setNameDraft] = useState('');
+
   const save = async () => {
     if (!outfit) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    await saveOutfit(outfit);
+    await saveOutfit(outfit, nameDraft || undefined);
     setJustSaved(true);
+    setNameDraft('');
     setTimeout(() => setJustSaved(false), 1500);
   };
 
@@ -169,6 +174,17 @@ export default function BuilderScreen() {
                   </View>
                 </View>
               ))}
+            </View>
+            <View style={styles.nameField}>
+              <Eyebrow>{t('style.nameOutfit')} ({t('common.optional')})</Eyebrow>
+              <TextInput
+                style={styles.nameInput}
+                value={nameDraft}
+                onChangeText={setNameDraft}
+                placeholder={t('style.nameOutfitPh')}
+                placeholderTextColor={colors.textTertiary}
+                maxLength={48}
+              />
             </View>
             <Pressable style={[styles.saveBtn, justSaved && styles.saveBtnDone]} onPress={save}>
               <Ionicons
@@ -291,4 +307,13 @@ const styles = StyleSheet.create({
   },
   saveBtnDone: { backgroundColor: 'rgba(126,158,122,0.12)', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.positive },
   saveBtnText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 13, letterSpacing: 0.2 },
+
+  nameField: { marginTop: spacing.md, gap: 6 },
+  nameInput: {
+    paddingHorizontal: spacing.lg, paddingVertical: 11, borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    backgroundColor: colors.surfaceElevated, color: colors.textPrimary,
+    fontFamily: type.family.sansMedium, fontSize: 14,
+    marginTop: 6,
+  },
 });
