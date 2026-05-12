@@ -5,7 +5,7 @@ import { todayKey } from './journal';
 const KEY = 'plan.completion';
 const TEMPLATE_KEY = 'plan.template';
 
-export type PlanTemplate = 'foundations' | 'disciplined' | 'lean' | 'travel' | 'recovery' | 'cut';
+export type PlanTemplate = 'foundations' | 'disciplined' | 'lean' | 'travel' | 'recovery' | 'cut' | 'sundayReset' | 'focus';
 
 export const PLAN_TEMPLATES: Record<PlanTemplate, PlanItem[]> = {
   foundations: [
@@ -54,6 +54,23 @@ export const PLAN_TEMPLATES: Record<PlanTemplate, PlanItem[]> = {
     { id: 'c4', time: '17:00', title: 'Compound lifts',      category: 'Physique', duration: '55m' },
     { id: 'c5', time: '19:00', title: 'Low-carb evening',    category: 'Physique', duration: '10m' },
     { id: 'c6', time: '21:00', title: 'PM skin · retinol',   category: 'Grooming', duration: '6m'  },
+  ],
+  sundayReset: [
+    { id: 'sr1', time: '09:00', title: 'Wash + groom · long shower',  category: 'Grooming', duration: '20m' },
+    { id: 'sr2', time: '10:00', title: 'Laundry: wash + hang',        category: 'Style',    duration: '15m' },
+    { id: 'sr3', time: '11:00', title: 'Plan the week · 5 priorities', category: 'Mind',    duration: '15m' },
+    { id: 'sr4', time: '14:00', title: 'Easy walk · no phone',        category: 'Physique', duration: '40m' },
+    { id: 'sr5', time: '18:00', title: 'Lay out Monday fit',          category: 'Style',    duration: '5m'  },
+    { id: 'sr6', time: '21:00', title: 'PM skin · trim · clip',       category: 'Grooming', duration: '12m' },
+  ],
+  focus: [
+    { id: 'df1', time: '06:45', title: 'Make the bed',                 category: 'Mind',     duration: '1m'  },
+    { id: 'df2', time: '07:00', title: 'AM skin · minimal',            category: 'Grooming', duration: '3m'  },
+    { id: 'df3', time: '07:30', title: 'Deep work · one task · 90m',   category: 'Mind',     duration: '90m' },
+    { id: 'df4', time: '12:00', title: 'Walk · phone in pocket',       category: 'Physique', duration: '20m' },
+    { id: 'df5', time: '17:00', title: 'Short lift · 25m',             category: 'Physique', duration: '25m' },
+    { id: 'df6', time: '21:00', title: 'Review the day · 3 lines',     category: 'Mind',     duration: '5m'  },
+    { id: 'df7', time: '22:00', title: 'Phone in other room',          category: 'Mind',     duration: '0m'  },
   ],
 };
 

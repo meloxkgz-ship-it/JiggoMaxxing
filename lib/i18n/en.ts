@@ -135,6 +135,8 @@ export default {
       travel: 'Travel mode',
       recovery: 'Recovery',
       cut: 'Cut',
+      sundayReset: 'Sunday reset',
+      focus: 'Deep focus',
     },
     saveAsTemplate: 'Save as template',
     saveAsTemplatePh: 'My morning ritual',

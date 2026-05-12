@@ -135,6 +135,8 @@ export default {
       travel: 'Reisemodus',
       recovery: 'Recovery',
       cut: 'Definition',
+      sundayReset: 'Sonntags-Reset',
+      focus: 'Deep Focus',
     },
     saveAsTemplate: 'Als Vorlage speichern',
     saveAsTemplatePh: 'Mein Morgenritual',

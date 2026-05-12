@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
@@ -126,6 +127,14 @@ export default function OnboardingScreen() {
             </View>
 
             <JMMark size={56} />
+
+            {/* Per-step content wrapper: keyed on `step` so each transition
+                fully unmounts + remounts, triggering the entering animation
+                anew. Springified for a calm, intentional cadence. */}
+            <Animated.View
+              key={step}
+              entering={FadeInDown.duration(380).springify().damping(18)}
+              style={{ gap: spacing.md }}>
 
             {step === 'intro' && (
               <>
@@ -279,6 +288,8 @@ export default function OnboardingScreen() {
                 </Pressable>
               </>
             )}
+
+            </Animated.View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>

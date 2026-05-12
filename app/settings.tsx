@@ -27,6 +27,7 @@ import {
   requestPermission,
   scheduleNudgeNotification,
 } from '@/lib/notifications';
+import { getDailyQuote } from '@/lib/quotes';
 import { getApiKey, getSettings, saveSettings, setApiKey } from '@/lib/settings';
 import { exportAll, importAll, wipeAll } from '@/lib/storage';
 import * as Clipboard from 'expo-clipboard';
@@ -332,6 +333,19 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title={t('settings.about')}>
+          {/* Today's quote — same source as the Coach empty-state. Surfaces
+              the editorial layer into Settings so the brand voice is present
+              even in utility screens. */}
+          {(() => {
+            const q = getDailyQuote(lang);
+            return (
+              <View style={styles.quoteCard}>
+                <Ionicons name="leaf-outline" size={12} color={colors.bronze} />
+                <Text style={styles.quoteText}>{`"${q.text}"`}</Text>
+                <Text style={styles.quoteAuthor}>— {q.author}</Text>
+              </View>
+            );
+          })()}
           <Pressable
             style={styles.whyRow}
             onPress={() => router.push('/why' as any)}>
@@ -491,6 +505,32 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bronzeOnBlack,
   },
   whyTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14 },
+  quoteCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(176,138,90,0.06)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.18)',
+    gap: 6,
+    marginBottom: spacing.md,
+  },
+  quoteText: {
+    color: colors.textPrimary,
+    fontFamily: type.family.sans,
+    fontStyle: 'italic',
+    fontSize: 13.5,
+    lineHeight: 20,
+    letterSpacing: 0.1,
+    marginTop: 4,
+  },
+  quoteAuthor: {
+    color: colors.bronze,
+    fontFamily: type.family.sansMedium,
+    fontSize: 10.5,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginTop: 2,
+  },
   whySub: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12, marginTop: 2 },
 
   dangerBtn: {
