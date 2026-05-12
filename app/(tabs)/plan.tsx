@@ -11,14 +11,20 @@ import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useT } from '@/lib/i18n';
 import { todayKey } from '@/lib/journal';
 import {
+  ActiveTemplateId,
   deleteCustomItem,
+  deleteUserTemplate,
   getActivePlan,
   getActiveTemplate,
   getCompletion,
+  getCustomItems,
+  listUserTemplates,
   PlanTemplate,
   PLAN_TEMPLATES,
+  saveUserTemplate,
   setActiveTemplate,
   toggleComplete,
+  UserTemplate,
 } from '@/lib/plan';
 import { PlanItem } from '@/lib/types';
 
@@ -38,7 +44,8 @@ const TEMPLATES: PlanTemplate[] = ['foundations', 'disciplined', 'lean', 'travel
 
 export default function PlanScreen() {
   const t = useT();
-  const [tpl, setTpl] = useState<PlanTemplate>('foundations');
+  const [tpl, setTpl] = useState<ActiveTemplateId>('foundations');
+  const [userTemplates, setUserTemplates] = useState<UserTemplate[]>([]);
   const [items, setItems] = useState<PlanItem[]>([]);
   const [doneToday, setDoneToday] = useState<string[]>([]);
   const [weekDone, setWeekDone] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
@@ -46,13 +53,15 @@ export default function PlanScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const refresh = useCallback(async () => {
-    const [t, plan, map] = await Promise.all([
+    const [tmpl, plan, map, ut] = await Promise.all([
       getActiveTemplate(),
       getActivePlan(),
       getCompletion(),
+      listUserTemplates(),
     ]);
-    setTpl(t);
+    setTpl(tmpl);
     setItems(plan);
+    setUserTemplates(ut);
     setDoneToday(map[todayKey()] ?? []);
     const week = lastNDates(7);
     setWeekDone(week.map((d) => (map[d] ?? []).length));
@@ -75,11 +84,45 @@ export default function PlanScreen() {
     refresh();
   };
 
-  const switchTpl = async (v: PlanTemplate) => {
+  const switchTpl = async (v: ActiveTemplateId) => {
     Haptics.selectionAsync().catch(() => {});
     await setActiveTemplate(v);
-    setTpl(v);
-    setItems(PLAN_TEMPLATES[v]);
+    refresh();
+  };
+
+  const saveAsTemplate = () => {
+    Alert.prompt?.(
+      t('plan.saveAsTemplate'),
+      t('plan.saveAsTemplatePh'),
+      async (name?: string) => {
+        if (!name?.trim()) return;
+        const customs = await getCustomItems();
+        // base = current template items + customs (without their ids regenerated)
+        const baseItems =
+          tpl in PLAN_TEMPLATES ? PLAN_TEMPLATES[tpl as PlanTemplate] : items.filter((i) => !i.id.startsWith('c_'));
+        const tplItems = [...baseItems, ...customs].sort((a, b) => a.time.localeCompare(b.time));
+        const created = await saveUserTemplate(name, tplItems);
+        await setActiveTemplate(created.id);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        Alert.alert(t('plan.templateSaved'));
+        refresh();
+      },
+    );
+  };
+
+  const removeUserTpl = (id: string, name: string) => {
+    Alert.alert(t('plan.deleteTemplate'), name, [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'),
+        style: 'destructive',
+        onPress: async () => {
+          await deleteUserTemplate(id);
+          if (tpl === id) await setActiveTemplate('foundations');
+          refresh();
+        },
+      },
+    ]);
   };
 
   const completed = doneToday.length;
@@ -100,7 +143,12 @@ export default function PlanScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.bronze} />}>
         {/* Template switcher */}
         <View style={styles.field}>
-          <Eyebrow>{t('plan.template')}</Eyebrow>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Eyebrow>{t('plan.template')}</Eyebrow>
+            <Pressable hitSlop={6} onPress={saveAsTemplate}>
+              <Text style={styles.saveTplLink}>+ {t('plan.saveAsTemplate')}</Text>
+            </Pressable>
+          </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
             {TEMPLATES.map((x) => (
               <Pressable
@@ -109,6 +157,17 @@ export default function PlanScreen() {
                 style={[styles.chip, tpl === x && styles.chipActive]}>
                 <Text style={[styles.chipText, tpl === x && styles.chipTextActive]}>
                   {t(`plan.templates.${x}`)}
+                </Text>
+              </Pressable>
+            ))}
+            {userTemplates.map((u) => (
+              <Pressable
+                key={u.id}
+                onPress={() => switchTpl(u.id)}
+                onLongPress={() => removeUserTpl(u.id, u.name)}
+                style={[styles.chip, tpl === u.id && styles.chipActive]}>
+                <Text style={[styles.chipText, tpl === u.id && styles.chipTextActive]}>
+                  {u.name}
                 </Text>
               </Pressable>
             ))}
@@ -324,6 +383,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.bronze, borderColor: colors.bronze },
   chipText: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 11.5, letterSpacing: 0.2 },
   chipTextActive: { color: colors.textOnBronze },
+  saveTplLink: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.3 },
 
   weekHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   completed: { color: colors.bronze, fontFamily: type.family.sansSemi, fontSize: 12, letterSpacing: 0.3 },

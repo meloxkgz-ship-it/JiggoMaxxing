@@ -43,12 +43,44 @@ export const PLAN_TEMPLATES: Record<PlanTemplate, PlanItem[]> = {
 
 export const DEFAULT_PLAN = PLAN_TEMPLATES.foundations;
 
-export async function getActiveTemplate(): Promise<PlanTemplate> {
-  const v = await getJSON<PlanTemplate>(TEMPLATE_KEY, 'foundations');
+const USER_TEMPLATES_KEY = 'plan.userTemplates';
+
+export type UserTemplate = {
+  id: string;          // `u_*`
+  name: string;
+  items: PlanItem[];
+};
+
+export async function listUserTemplates(): Promise<UserTemplate[]> {
+  return getJSON<UserTemplate[]>(USER_TEMPLATES_KEY, []);
+}
+
+export async function saveUserTemplate(name: string, items: PlanItem[]): Promise<UserTemplate> {
+  const list = await listUserTemplates();
+  const tpl: UserTemplate = {
+    id: `u_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 5)}`,
+    name: name.trim() || 'Untitled',
+    items,
+  };
+  list.push(tpl);
+  await setJSON(USER_TEMPLATES_KEY, list);
+  return tpl;
+}
+
+export async function deleteUserTemplate(id: string): Promise<void> {
+  const list = await listUserTemplates();
+  await setJSON(USER_TEMPLATES_KEY, list.filter((x) => x.id !== id));
+}
+
+/** Active template can now be a built-in name or a user template id. */
+export type ActiveTemplateId = PlanTemplate | string; // string covers u_*
+
+export async function getActiveTemplate(): Promise<ActiveTemplateId> {
+  const v = await getJSON<ActiveTemplateId>(TEMPLATE_KEY, 'foundations');
   return v ?? 'foundations';
 }
 
-export async function setActiveTemplate(v: PlanTemplate): Promise<void> {
+export async function setActiveTemplate(v: ActiveTemplateId): Promise<void> {
   await setJSON(TEMPLATE_KEY, v);
 }
 
@@ -94,7 +126,14 @@ export async function updateCustomItem(id: string, patch: Partial<PlanItem>): Pr
 export async function getActivePlan(): Promise<PlanItem[]> {
   const tpl = await getActiveTemplate();
   const custom = await getCustomItems();
-  const merged = [...PLAN_TEMPLATES[tpl], ...custom];
+  let base: PlanItem[];
+  if (tpl in PLAN_TEMPLATES) {
+    base = PLAN_TEMPLATES[tpl as PlanTemplate];
+  } else {
+    const user = (await listUserTemplates()).find((u) => u.id === tpl);
+    base = user?.items ?? PLAN_TEMPLATES.foundations;
+  }
+  const merged = [...base, ...custom];
   merged.sort((a, b) => a.time.localeCompare(b.time));
   return merged;
 }

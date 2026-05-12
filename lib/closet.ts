@@ -132,6 +132,23 @@ export type Look = {
   palette: string[]; // hex
   description: string;
   copy: string;
+  cover?: any; // require() handle (bundled PNG)
+};
+
+/** Map of look id → bundled cover image. */
+export const LOOK_COVERS: Record<string, any> = {
+  l1:  require('../assets/looks/l1.png'),
+  l2:  require('../assets/looks/l2.png'),
+  l3:  require('../assets/looks/l3.png'),
+  l4:  require('../assets/looks/l4.png'),
+  l5:  require('../assets/looks/l5.png'),
+  l6:  require('../assets/looks/l6.png'),
+  l7:  require('../assets/looks/l7.png'),
+  l8:  require('../assets/looks/l8.png'),
+  l9:  require('../assets/looks/l9.png'),
+  l10: require('../assets/looks/l10.png'),
+  l11: require('../assets/looks/l11.png'),
+  l12: require('../assets/looks/l12.png'),
 };
 
 /** Average tone of a look based on its palette. */

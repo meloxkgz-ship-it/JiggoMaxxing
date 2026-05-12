@@ -54,6 +54,18 @@ export default function ScanDetailScreen() {
     ]);
   };
 
+  const [allScans, setAllScans] = useState<ScanResult[]>([]);
+  useEffect(() => { (async () => setAllScans(await listScans()))(); }, []);
+
+  // Per-dimension trend across last 8 scans (oldest → newest)
+  const dimTrend: Record<string, number[]> = {};
+  const recent = [...allScans].slice(0, 8).reverse();
+  for (const s of recent) {
+    for (const [k, v] of Object.entries(s.dimensions)) {
+      (dimTrend[k] ??= []).push(v);
+    }
+  }
+
   const actions: { name: string; score: number; text: string }[] = [];
   for (const [name, score] of Object.entries(scan.dimensions)) {
     const tip = MICRO_FOR[name];
@@ -125,15 +137,38 @@ export default function ScanDetailScreen() {
         <View style={styles.section}>
           <Eyebrow>{t('scan.history')}</Eyebrow>
           <View style={styles.grid}>
-            {Object.entries(scan.dimensions).map(([name, score]) => (
-              <View key={name} style={styles.dim}>
-                <Text style={styles.dimName}>{t(`scan.dimensions.${name}`)}</Text>
-                <Text style={styles.dimScore}>{score}</Text>
-                <View style={styles.dimBar}>
-                  <View style={[styles.dimBarFill, { width: `${score}%` }]} />
+            {Object.entries(scan.dimensions).map(([name, score]) => {
+              const series = dimTrend[name] ?? [score];
+              const min = Math.min(...series);
+              const max = Math.max(...series);
+              const range = Math.max(8, max - min);
+              return (
+                <View key={name} style={styles.dim}>
+                  <Text style={styles.dimName}>{t(`scan.dimensions.${name}`)}</Text>
+                  <Text style={styles.dimScore}>{score}</Text>
+                  <View style={styles.dimBar}>
+                    <View style={[styles.dimBarFill, { width: `${score}%` }]} />
+                  </View>
+                  {series.length > 1 && (
+                    <View style={styles.dimSpark}>
+                      {series.map((v, i) => {
+                        const h = ((v - min) / range) * 22 + 4;
+                        const isLast = i === series.length - 1;
+                        return (
+                          <View
+                            key={i}
+                            style={[
+                              styles.dimSparkBar,
+                              { height: h, backgroundColor: isLast ? colors.bronze : colors.surfaceMuted },
+                            ]}
+                          />
+                        );
+                      })}
+                    </View>
+                  )}
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 
@@ -212,6 +247,8 @@ const styles = StyleSheet.create({
   dimScore: { color: colors.textPrimary, fontFamily: type.family.sansBlack, fontSize: 28, letterSpacing: type.letterSpacing.tight },
   dimBar: { height: 3, borderRadius: 2, backgroundColor: colors.hairline, overflow: 'hidden' },
   dimBarFill: { height: '100%', backgroundColor: colors.bronze },
+  dimSpark: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, marginTop: 6, height: 28 },
+  dimSparkBar: { flex: 1, borderRadius: 2, minHeight: 2 },
 
   meta: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 11, textAlign: 'center', marginTop: spacing.sm },
 });

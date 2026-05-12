@@ -191,18 +191,37 @@ export default function InsightsScreen() {
 
         {/* Dimensions */}
         {bestDim && weakDim && (
-          <View style={styles.row}>
-            <View style={[styles.miniCard, styles.miniCardGood]}>
-              <Eyebrow>{t('home.insightsBestDim')}</Eyebrow>
-              <Text style={styles.miniName}>{t(`scan.dimensions.${bestDim.name}` as any)}</Text>
-              <Text style={styles.miniValue}>{bestDim.v}</Text>
+          <>
+            <View style={styles.row}>
+              <View style={[styles.miniCard, styles.miniCardGood]}>
+                <Eyebrow>{t('home.insightsBestDim')}</Eyebrow>
+                <Text style={styles.miniName}>{t(`scan.dimensions.${bestDim.name}` as any)}</Text>
+                <Text style={styles.miniValue}>{bestDim.v}</Text>
+              </View>
+              <View style={[styles.miniCard, styles.miniCardWatch]}>
+                <Eyebrow>{t('home.insightsWeakestDim')}</Eyebrow>
+                <Text style={styles.miniName}>{t(`scan.dimensions.${weakDim.name}` as any)}</Text>
+                <Text style={styles.miniValue}>{weakDim.v}</Text>
+              </View>
             </View>
-            <View style={[styles.miniCard, styles.miniCardWatch]}>
-              <Eyebrow>{t('home.insightsWeakestDim')}</Eyebrow>
-              <Text style={styles.miniName}>{t(`scan.dimensions.${weakDim.name}` as any)}</Text>
-              <Text style={styles.miniValue}>{weakDim.v}</Text>
-            </View>
-          </View>
+            <Pressable
+              style={styles.askCoachBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                const dimLabel = t(`scan.dimensions.${weakDim.name}` as any);
+                router.push({
+                  pathname: '/(tabs)/coach',
+                  params: { primed: t('home.askCoachPrimed', { dim: dimLabel }) },
+                } as any);
+              }}>
+              <Ionicons name="sparkles-outline" size={14} color={colors.textOnBronze} />
+              <Text style={styles.askCoachText}>
+                {t('home.askCoachAboutDim', {
+                  dim: t(`scan.dimensions.${weakDim.name}` as any),
+                })}
+              </Text>
+            </Pressable>
+          </>
         )}
 
         {/* Top mood */}
@@ -362,4 +381,11 @@ const styles = StyleSheet.create({
   scanDetailDimName: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10.5, letterSpacing: 0.3 },
   scanDetailDimVal: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 12 },
   scanDetailOpen: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase' },
+
+  askCoachBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 13, borderRadius: radius.pill,
+    backgroundColor: colors.bronze,
+  },
+  askCoachText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 13, letterSpacing: 0.2 },
 });

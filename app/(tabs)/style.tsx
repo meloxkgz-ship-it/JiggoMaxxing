@@ -24,6 +24,7 @@ import {
   listItems,
   listSavedOutfits,
   Look,
+  LOOK_COVERS,
   LOOKS,
   lookTone,
   Outfit,
@@ -283,18 +284,19 @@ function TodaysPickCard() {
 }
 
 function LookCard({ look, t }: { look: Look; t: (k: string, vars?: any) => string }) {
+  const cover = LOOK_COVERS[look.id];
   return (
     <Pressable
       style={styles.lookCard}
       onPress={() => router.push({ pathname: '/look-detail', params: { id: look.id } } as any)}>
-      <View style={styles.lookSwatchRow}>
-        {look.palette.map((c, i) => (
-          <View key={i} style={[styles.lookSwatch, { backgroundColor: c, marginLeft: i === 0 ? 0 : -10 }]} />
-        ))}
+      {cover && (
+        <Image source={cover} style={styles.lookCover} contentFit="cover" />
+      )}
+      <View style={styles.lookBody}>
+        <Text style={styles.lookTitle}>{look.title}</Text>
+        <Text style={styles.lookMeta}>{t(`style.archetypes.${look.archetype}`)} · {t(`style.occasions.${look.occasion}`)}</Text>
+        <Text style={styles.lookCopy}>{look.copy}</Text>
       </View>
-      <Text style={styles.lookTitle}>{look.title}</Text>
-      <Text style={styles.lookMeta}>{t(`style.archetypes.${look.archetype}`)} · {t(`style.occasions.${look.occasion}`)}</Text>
-      <Text style={styles.lookCopy}>{look.copy}</Text>
     </Pressable>
   );
 }
@@ -386,11 +388,13 @@ const styles = StyleSheet.create({
 
   looksGrid: { paddingHorizontal: spacing.xl, gap: spacing.md },
   lookCard: {
-    padding: spacing.lg, borderRadius: radius.lg,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
-    gap: 6,
+    overflow: 'hidden',
   },
+  lookCover: { width: '100%', aspectRatio: 4 / 5 },
+  lookBody: { padding: spacing.lg, gap: 6 },
   lookSwatchRow: { flexDirection: 'row', marginBottom: 4 },
   lookSwatch: { width: 28, height: 28, borderRadius: 14, borderWidth: 1.5, borderColor: colors.surface },
   lookTitle: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 15, letterSpacing: type.letterSpacing.tight },

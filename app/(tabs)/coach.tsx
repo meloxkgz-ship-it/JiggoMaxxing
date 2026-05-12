@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -46,6 +46,7 @@ const SUGGESTION_KEYS = ['skinReset', 'posture', 'pushPull', 'style', 'restart']
 
 export default function CoachScreen() {
   const t = useT();
+  const params = useLocalSearchParams<{ primed?: string }>();
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [turns, setTurns] = useState<CoachTurn[]>([]);
   const [input, setInput] = useState('');
@@ -70,6 +71,17 @@ export default function CoachScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+
+  // Honor a primed prompt passed in via /coach?primed=...
+  useEffect(() => {
+    if (params.primed && hasKey === true && !busy) {
+      const text = String(params.primed);
+      // clear the param so it doesn't refire on navigation
+      router.setParams({ primed: undefined } as any);
+      send(text);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.primed, hasKey]);
 
   useEffect(() => {
     scrollRef.current?.scrollToEnd({ animated: true });

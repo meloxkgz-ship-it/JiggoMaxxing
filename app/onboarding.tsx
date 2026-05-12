@@ -18,9 +18,14 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
+import {
+  requestPermission,
+  scheduleNudgeNotification,
+  setNotificationPref,
+} from '@/lib/notifications';
 import { saveSettings } from '@/lib/settings';
 
-const STEPS = ['intro', 'pact', 'tour', 'profile'] as const;
+const STEPS = ['intro', 'pact', 'tour', 'notify', 'profile'] as const;
 type Step = typeof STEPS[number];
 
 const TOUR_ITEMS = [
@@ -145,6 +150,31 @@ export default function OnboardingScreen() {
                 <Pressable style={styles.cta} onPress={next}>
                   <Text style={styles.ctaText}>{t('common.continue')}</Text>
                   <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
+                </Pressable>
+              </>
+            )}
+
+            {step === 'notify' && (
+              <>
+                <Eyebrow>{t('home.nudge')}</Eyebrow>
+                <Text style={styles.title}>{t('onboarding.notifyTitle')}</Text>
+                <Text style={styles.body}>{t('onboarding.notifyBody')}</Text>
+                <Pressable
+                  style={styles.cta}
+                  onPress={async () => {
+                    const granted = await requestPermission();
+                    if (granted) {
+                      const pref = { enabled: true, hour: 9, minute: 0 };
+                      await setNotificationPref(pref);
+                      await scheduleNudgeNotification(pref, lang);
+                    }
+                    next();
+                  }}>
+                  <Ionicons name="notifications-outline" size={16} color={colors.textOnBronze} />
+                  <Text style={styles.ctaText}>{t('onboarding.notifyEnable')}</Text>
+                </Pressable>
+                <Pressable onPress={next}>
+                  <Text style={styles.skip}>{t('onboarding.notifyLater')}</Text>
                 </Pressable>
               </>
             )}

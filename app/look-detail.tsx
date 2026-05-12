@@ -6,7 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { COLORS, LOOKS } from '@/lib/closet';
+import { Image } from 'expo-image';
+import { COLORS, LOOK_COVERS, LOOKS } from '@/lib/closet';
 import { useT } from '@/lib/i18n';
 
 function colorName(hex: string): string {
@@ -38,16 +39,22 @@ export default function LookDetailScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <LinearGradient
-          colors={[look.palette[0], look.palette[1] ?? look.palette[0], look.palette[2] ?? look.palette[0]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroBg}>
+        <View style={styles.heroBg}>
+          {LOOK_COVERS[look.id] ? (
+            <Image source={LOOK_COVERS[look.id]} style={StyleSheet.absoluteFill} contentFit="cover" />
+          ) : (
+            <LinearGradient
+              colors={[look.palette[0], look.palette[1] ?? look.palette[0], look.palette[2] ?? look.palette[0]]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
           <View style={styles.heroOverlay}>
             <Eyebrow>{t(`style.archetypes.${look.archetype}`)} · {t(`style.occasions.${look.occasion}`)}</Eyebrow>
             <Text style={styles.heroTitle}>{look.title}</Text>
           </View>
-        </LinearGradient>
+        </View>
 
         <View style={styles.section}>
           <Eyebrow>{t('style.matchColor')}</Eyebrow>
