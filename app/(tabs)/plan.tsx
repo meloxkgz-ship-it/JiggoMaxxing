@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -42,6 +42,7 @@ export default function PlanScreen() {
   const [doneToday, setDoneToday] = useState<string[]>([]);
   const [weekDone, setWeekDone] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
   const [last28, setLast28] = useState<number[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const refresh = useCallback(async () => {
     const [t, plan, map] = await Promise.all([
@@ -59,6 +60,12 @@ export default function PlanScreen() {
   }, []);
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refresh();
+    setRefreshing(false);
+  };
 
   const onToggle = async (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -86,7 +93,10 @@ export default function PlanScreen() {
         title={t('plan.title')}
         subtitle={t('plan.subtitle')}
       />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.bronze} />}>
         {/* Template switcher */}
         <View style={styles.field}>
           <Eyebrow>{t('plan.template')}</Eyebrow>

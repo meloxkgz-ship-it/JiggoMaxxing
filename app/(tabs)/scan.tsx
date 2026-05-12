@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -29,10 +30,15 @@ export default function ScanScreen() {
   const { lang } = useLanguage();
   const [scans, setScans] = useState<ScanResult[]>([]);
   const [busy, setBusy] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(useCallback(() => {
-    (async () => setScans(await listScans()))();
-  }, []));
+  const reload = useCallback(async () => setScans(await listScans()), []);
+  useFocusEffect(useCallback(() => { reload(); }, [reload]));
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  };
 
   const latest = scans[0];
 
@@ -94,7 +100,10 @@ export default function ScanScreen() {
         title={t('scan.title')}
         subtitle={t('scan.subtitle')}
       />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.bronze} />}>
         <LinearGradient
           colors={['#1A1411', '#0E0B09']}
           start={{ x: 0, y: 0 }}

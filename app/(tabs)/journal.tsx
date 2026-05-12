@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import {
   Alert,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -30,13 +31,20 @@ export default function JournalScreen() {
   const t = useT();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [streak, setStreak] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(useCallback(() => {
-    (async () => {
-      setEntries(await listEntries());
-      setStreak(await getStreak());
-    })();
-  }, []));
+  const reload = useCallback(async () => {
+    setEntries(await listEntries());
+    setStreak(await getStreak());
+  }, []);
+
+  useFocusEffect(useCallback(() => { reload(); }, [reload]));
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await reload();
+    setRefreshing(false);
+  };
 
   const weights = entries.filter((e) => typeof e.weightKg === 'number').slice(0, 14).reverse();
   const latest = entries[0];
@@ -72,7 +80,10 @@ export default function JournalScreen() {
         title={t('journal.title')}
         subtitle={t('journal.subtitle')}
       />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.bronze} />}>
         <Card variant="elevated" style={{ gap: spacing.md }}>
           <View style={styles.metaRow}>
             <Eyebrow>{t('journal.weightLabel')}</Eyebrow>
