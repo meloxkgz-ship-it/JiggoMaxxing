@@ -94,6 +94,8 @@ export default {
     quickJournal: 'Journal entry',
     quickJournalSub: 'Weight · mood · notes',
     todaySection: 'Today',
+    tomorrowSection: 'Tomorrow',
+    tomorrowSub: 'Already set. Sleep well.',
     todayDone: '{done} of {total} done today',
     viewPlan: 'View plan ›',
     winsTitle: 'Recent wins',

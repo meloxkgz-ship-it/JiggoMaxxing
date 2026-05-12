@@ -27,7 +27,8 @@ import {
   sendToCoach,
   streamToCoach,
 } from '@/lib/coach';
-import { useT } from '@/lib/i18n';
+import { useLanguage, useT } from '@/lib/i18n';
+import { getDailyQuote } from '@/lib/quotes';
 import { getApiKey } from '@/lib/settings';
 import { CoachTurn } from '@/lib/types';
 
@@ -51,6 +52,7 @@ const SUGGESTION_KEYS = ['skinReset', 'posture', 'pushPull', 'style', 'restart']
 
 export default function CoachScreen() {
   const t = useT();
+  const { lang } = useLanguage();
   const params = useLocalSearchParams<{ primed?: string }>();
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [turns, setTurns] = useState<CoachTurn[]>([]);
@@ -323,19 +325,29 @@ export default function CoachScreen() {
             style={{ flex: 1 }}
             contentContainerStyle={styles.thread}
             showsVerticalScrollIndicator={false}>
-            {turns.length === 0 && (
-              <View style={styles.empty}>
-                <Text style={styles.emptyTitle}>{t('coach.emptyTitle')}</Text>
-                <Text style={styles.emptyBody}>{t('coach.emptyBody')}</Text>
-                <View style={styles.suggestions}>
-                  {SUGGESTION_KEYS.map((k) => (
-                    <Pressable key={k} style={styles.suggestion} onPress={() => send(t(`coach.suggestions.${k}`))}>
-                      <Text style={styles.suggestionText}>{t(`coach.suggestions.${k}`)}</Text>
-                    </Pressable>
-                  ))}
+            {turns.length === 0 && (() => {
+              const q = getDailyQuote(lang);
+              return (
+                <View style={styles.empty}>
+                  {/* Daily quote — rotates by local day-of-year. Discipline /
+                      frame / presence tradition only, no looksmaxxing tropes. */}
+                  <View style={styles.quoteCard}>
+                    <Ionicons name="leaf-outline" size={14} color={colors.bronze} />
+                    <Text style={styles.quoteText}>{`"${q.text}"`}</Text>
+                    <Text style={styles.quoteAuthor}>— {q.author}</Text>
+                  </View>
+                  <Text style={styles.emptyTitle}>{t('coach.emptyTitle')}</Text>
+                  <Text style={styles.emptyBody}>{t('coach.emptyBody')}</Text>
+                  <View style={styles.suggestions}>
+                    {SUGGESTION_KEYS.map((k) => (
+                      <Pressable key={k} style={styles.suggestion} onPress={() => send(t(`coach.suggestions.${k}`))}>
+                        <Text style={styles.suggestionText}>{t(`coach.suggestions.${k}`)}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
                 </View>
-              </View>
-            )}
+              );
+            })()}
 
             {turns.map((turn, i) => (
               <View
@@ -488,6 +500,31 @@ const styles = StyleSheet.create({
 
   thread: { paddingHorizontal: spacing.xl, paddingBottom: spacing.lg, gap: spacing.md },
   empty: { gap: spacing.md, marginTop: spacing.xl },
+  quoteCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(176,138,90,0.07)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.22)',
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  quoteText: {
+    color: colors.textPrimary,
+    fontFamily: type.family.sans,
+    fontStyle: 'italic',
+    fontSize: 14.5,
+    lineHeight: 22,
+    letterSpacing: 0.1,
+  },
+  quoteAuthor: {
+    color: colors.bronze,
+    fontFamily: type.family.sansMedium,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginTop: 4,
+  },
   emptyTitle: { color: colors.textPrimary, fontFamily: type.family.sansBlack, fontSize: 28, letterSpacing: type.letterSpacing.tight },
   emptyBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 14, lineHeight: 21 },
   suggestions: { gap: spacing.sm, marginTop: spacing.lg },

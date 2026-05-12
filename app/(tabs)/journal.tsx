@@ -157,6 +157,9 @@ export default function JournalScreen() {
 
           {entries.length === 0 && (
             <Card variant="outline" style={styles.empty}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="leaf-outline" size={22} color={colors.bronze} />
+              </View>
               <Text style={styles.emptyTitle}>{t('journal.empty')}</Text>
               <Text style={styles.emptyBody}>{t('journal.emptyBody')}</Text>
               <Pressable
@@ -253,6 +256,13 @@ const styles = StyleSheet.create({
   sectionHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
 
   empty: { gap: spacing.sm, alignItems: 'flex-start' },
+  emptyIcon: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: 'rgba(176,138,90,0.10)',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.22)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
   emptyTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 15 },
   emptyBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13, lineHeight: 19 },
   emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.lg, paddingVertical: 9, backgroundColor: colors.bronze, borderRadius: radius.pill, marginTop: spacing.sm },

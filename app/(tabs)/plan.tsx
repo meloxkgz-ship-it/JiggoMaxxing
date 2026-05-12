@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
@@ -78,9 +79,15 @@ export default function PlanScreen() {
   };
 
   const onToggle = async (id: string) => {
+    const wasDone = doneToday.includes(id);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     const next = await toggleComplete(id);
     setDoneToday(next);
+    // Success haptic on completing an item — small earned-feedback moment
+    // that doesn't fire on the un-toggle path.
+    if (!wasDone) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    }
     refresh();
   };
 
@@ -253,7 +260,14 @@ export default function PlanScreen() {
                     <Text style={styles.rowMeta}>{it.category} · {it.duration}</Text>
                   </View>
                   <View style={[styles.check, done && styles.checkDone]}>
-                    {done && <Ionicons name="checkmark" size={14} color={colors.textOnBronze} />}
+                    {done && (
+                      // Pop the check on completion — Reanimated springs the
+                      // glyph in when `done` flips, so marking done feels
+                      // physically earned instead of a flat toggle.
+                      <Animated.View entering={ZoomIn.springify().damping(14).stiffness(220)}>
+                        <Ionicons name="checkmark" size={14} color={colors.textOnBronze} />
+                      </Animated.View>
+                    )}
                   </View>
                 </Pressable>
               );

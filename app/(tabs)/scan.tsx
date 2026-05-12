@@ -179,6 +179,9 @@ export default function ScanScreen() {
           </View>
           {scans.length === 0 ? (
             <View style={styles.empty}>
+              <View style={styles.emptyIcon}>
+                <Ionicons name="scan-outline" size={22} color={colors.bronze} />
+              </View>
               <Text style={styles.emptyText}>{t('scan.noScans')}</Text>
             </View>
           ) : (
@@ -288,8 +291,14 @@ const styles = StyleSheet.create({
   sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   sectionMeta: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11, letterSpacing: 0.3 },
 
-  empty: { padding: spacing.lg, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline, backgroundColor: colors.surface },
-  emptyText: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 13, lineHeight: 19 },
+  empty: { padding: spacing.lg, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline, backgroundColor: colors.surface, alignItems: 'center', gap: spacing.sm },
+  emptyIcon: {
+    width: 44, height: 44, borderRadius: 14,
+    backgroundColor: 'rgba(176,138,90,0.10)',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.22)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  emptyText: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 13, lineHeight: 19, textAlign: 'center' },
 
   histRow: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

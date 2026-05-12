@@ -53,6 +53,9 @@ export default function HomeHubScreen() {
   const { lang } = useLanguage();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [scan, setScan] = useState<ScanResult | null>(null);
+  // Score of the scan before the most recent one — used to show a quiet
+  // "+3 vs last reading" delta on the Edge Index. Null when fewer than 2.
+  const [previousScanOverall, setPreviousScanOverall] = useState<number | null>(null);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [plan, setPlan] = useState<PlanItem[]>([]);
   const [planDone, setPlanDone] = useState(0);
@@ -87,6 +90,7 @@ export default function HomeHubScreen() {
     ]);
     setSettings(s);
     setScan(sc[0] ?? null);
+    setPreviousScanOverall(sc.length >= 2 ? sc[1].overall : null);
     setJournal(je);
     setPlan(pp);
     setPlanDone((pc[todayKey()] ?? []).length);
@@ -340,6 +344,29 @@ export default function HomeHubScreen() {
             <View style={styles.heroNumberRow}>
               <CountUp value={overall} style={styles.heroNumber} fallback="—" />
               {overall !== null && <Text style={styles.heroOutOf}>/100</Text>}
+              {/* Trajectory chip — quiet "+3 / -2" indicator vs. the previous
+                  reading. Hidden when there's no comparison or the delta is 0
+                  (a flat reading isn't worth a callout). */}
+              {scan && previousScanOverall != null && scan.overall !== previousScanOverall && (
+                <View
+                  style={[
+                    styles.deltaChip,
+                    scan.overall > previousScanOverall ? styles.deltaChipUp : styles.deltaChipDown,
+                  ]}>
+                  <Ionicons
+                    name={scan.overall > previousScanOverall ? 'arrow-up' : 'arrow-down'}
+                    size={11}
+                    color={scan.overall > previousScanOverall ? colors.positive : colors.danger}
+                  />
+                  <Text
+                    style={[
+                      styles.deltaChipText,
+                      { color: scan.overall > previousScanOverall ? colors.positive : colors.danger },
+                    ]}>
+                    {Math.abs(scan.overall - previousScanOverall)}
+                  </Text>
+                </View>
+              )}
             </View>
             <Text style={styles.heroNote}>
               {scan?.insight ?? t('home.edgeIndexEmpty')}
@@ -415,6 +442,36 @@ export default function HomeHubScreen() {
             </View>
           </Card>
         </View>
+
+        {/* Tomorrow's first move — quiet preview, only when today is wrapped
+            OR it's late evening. Forward-rhythm framing: the ritual is already
+            set up, the user can release the day. */}
+        {(() => {
+          const hour = new Date().getHours();
+          const allDone = plan.length > 0 && planDone >= plan.length;
+          if (plan.length === 0) return null;
+          if (!allDone && hour < 19) return null;
+          const first = plan[0];
+          if (!first) return null;
+          return (
+            <View style={styles.section}>
+              <Eyebrow>{t('home.tomorrowSection')}</Eyebrow>
+              <Card variant="elevated" style={styles.tomorrowCard}>
+                <View style={styles.tomorrowRow}>
+                  <View style={styles.tomorrowTime}>
+                    <Text style={styles.tomorrowTimeText}>{first.time}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.tomorrowTitle}>{first.title}</Text>
+                    <Text style={styles.tomorrowMeta}>{first.category} · {first.duration}</Text>
+                  </View>
+                  <Ionicons name="moon-outline" size={18} color={colors.bronze} />
+                </View>
+                <Text style={styles.tomorrowSub}>{t('home.tomorrowSub')}</Text>
+              </Card>
+            </View>
+          );
+        })()}
 
         {/* Stats overview */}
         <View style={styles.section}>
@@ -764,6 +821,17 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     marginLeft: 4,
   },
+  deltaChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    marginLeft: 'auto',
+    marginBottom: 18,
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  deltaChipUp:   { borderColor: 'rgba(126,158,122,0.35)', backgroundColor: 'rgba(126,158,122,0.10)' },
+  deltaChipDown: { borderColor: 'rgba(176,88,79,0.35)',  backgroundColor: 'rgba(176,88,79,0.10)' },
+  deltaChipText: { fontFamily: type.family.sansBlack, fontSize: 11, letterSpacing: 0.4 },
   heroNote: {
     color: colors.textSecondary,
     fontFamily: type.family.sans,
@@ -850,6 +918,18 @@ const styles = StyleSheet.create({
   statTileLabel: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 4 },
 
   quickRow: { flexDirection: 'row', gap: spacing.md },
+
+  tomorrowCard: { padding: spacing.lg, gap: spacing.sm },
+  tomorrowRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  tomorrowTime: {
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.md,
+    backgroundColor: 'rgba(176,138,90,0.10)',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.22)',
+  },
+  tomorrowTimeText: { color: colors.bronze, fontFamily: type.family.sansBlack, fontSize: 14, letterSpacing: 0.5 },
+  tomorrowTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14 },
+  tomorrowMeta: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11, marginTop: 2 },
+  tomorrowSub: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12, fontStyle: 'italic' },
 
   winsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   winChip: {
