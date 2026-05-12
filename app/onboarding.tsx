@@ -20,8 +20,17 @@ import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
 import { saveSettings } from '@/lib/settings';
 
-const STEPS = ['intro', 'pact', 'profile'] as const;
+const STEPS = ['intro', 'pact', 'tour', 'profile'] as const;
 type Step = typeof STEPS[number];
+
+const TOUR_ITEMS = [
+  { k: 'Home',    icon: 'grid-outline'     as const, key: 'tourHome' },
+  { k: 'Plan',    icon: 'calendar-outline' as const, key: 'tourPlan' },
+  { k: 'Scan',    icon: 'scan-outline'     as const, key: 'tourScan' },
+  { k: 'Journal', icon: 'pulse-outline'    as const, key: 'tourJournal' },
+  { k: 'Style',   icon: 'shirt-outline'    as const, key: 'tourStyle' },
+  { k: 'Coach',   icon: 'sparkles-outline' as const, key: 'tourCoach' },
+];
 
 export default function OnboardingScreen() {
   const t = useT();
@@ -112,6 +121,29 @@ export default function OnboardingScreen() {
                 <Text style={styles.bodyMuted}>{t('onboarding.pactFooter')}</Text>
                 <Pressable style={styles.cta} onPress={next}>
                   <Text style={styles.ctaText}>{t('onboarding.agree')}</Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
+                </Pressable>
+              </>
+            )}
+
+            {step === 'tour' && (
+              <>
+                <Eyebrow>{t('onboarding.tour')}</Eyebrow>
+                <Text style={styles.title}>{t('onboarding.title4')}</Text>
+                <Text style={styles.body}>{t('onboarding.body4')}</Text>
+                <View style={styles.tourGrid}>
+                  {TOUR_ITEMS.map((it) => (
+                    <View key={it.k} style={styles.tourCard}>
+                      <View style={styles.tourIcon}>
+                        <Ionicons name={it.icon} size={16} color={colors.bronze} />
+                      </View>
+                      <Text style={styles.tourTitle}>{t(`onboarding.${it.key}` as any)}</Text>
+                      <Text style={styles.tourBody}>{t(`onboarding.${it.key}Body` as any)}</Text>
+                    </View>
+                  ))}
+                </View>
+                <Pressable style={styles.cta} onPress={next}>
+                  <Text style={styles.ctaText}>{t('common.continue')}</Text>
                   <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
                 </Pressable>
               </>
@@ -212,6 +244,24 @@ const styles = StyleSheet.create({
   featureIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.bronzeOnBlack, alignItems: 'center', justifyContent: 'center' },
   featureTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14 },
   featureBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 13, lineHeight: 19, marginTop: 2 },
+
+  tourGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.md },
+  tourCard: {
+    flexBasis: '47%', flexGrow: 1,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+    gap: 4,
+  },
+  tourIcon: {
+    width: 28, height: 28, borderRadius: 8,
+    backgroundColor: colors.bronzeOnBlack,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 4,
+  },
+  tourTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13 },
+  tourBody: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 11.5, lineHeight: 17 },
 
   pactList: { gap: spacing.sm, marginTop: spacing.lg },
   pactRow: {
