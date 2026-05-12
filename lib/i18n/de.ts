@@ -241,6 +241,12 @@ export default {
       motivated: 'Motiviert',
       restless: 'Unruhig',
     },
+    eveningPromptsTitle: 'Abend-Reflexion',
+    eveningPrompts: [
+      'Eine Sache, die heute gut lief.',
+      'Eine Sache, die nicht lief — ohne Vorwurf.',
+      'Eine Sache, die ich morgen mit mehr Ruhe nehme.',
+    ],
     review: {
       title: 'Wochenrückblick',
       body: 'Du hast diese Woche {count} Einträge geloggt. Durchschnittsstimmung: {mood}. Behalte, was funktioniert.',
@@ -346,6 +352,20 @@ export default {
     chatCopied: 'Chat kopiert',
     clearTitle: 'Coach-Verlauf löschen?',
     clearBody: 'Löscht alle Coach-Konversationen auf diesem Gerät.',
+  },
+  rituals: {
+    title: 'Rituale',
+    eyebrow: 'Ritual-Bibliothek',
+    heroTitle: 'Kurz. Bewusst.\nWiederholt.',
+    heroBody: 'Ein Ritual ist eine Routine mit Absicht. Drei Kontexte — Morgen, Mittag, Abend. Lies eines. Probier eines. Das Tun zählt, nicht das Tracking.',
+    context: {
+      morning: 'Morgen · den Tag beanspruchen',
+      reset: 'Reset · Mittag',
+      evening: 'Abend · loslassen',
+    },
+    fine: 'Keine Streaks. Keine Häkchen. Nimm eins, wenn du es brauchst.',
+    seeAll: 'Alle Rituale ansehen',
+    todayRitual: 'Ritual des Tages',
   },
   settings: {
     title: 'Einstellungen',

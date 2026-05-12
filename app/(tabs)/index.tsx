@@ -37,6 +37,7 @@ import {
   setNudgeDone,
 } from '@/lib/nudge';
 import { Alert } from 'react-native';
+import { getRitualForNow } from '@/lib/rituals';
 import { listScans } from '@/lib/scan';
 import { getSettings } from '@/lib/settings';
 import { JournalEntry, PlanItem, ScanResult, Settings } from '@/lib/types';
@@ -550,6 +551,41 @@ export default function HomeHubScreen() {
           );
         })()}
 
+        {/* Today's ritual — a contextual short sequence (morning / reset /
+            evening based on local hour). Distinct from the plan: this is
+            what you *enter*, not what you do across the week. */}
+        {(() => {
+          const ritual = getRitualForNow(lang);
+          return (
+            <View style={styles.section}>
+              <View style={styles.sectionHead}>
+                <Eyebrow>{t('rituals.todayRitual')}</Eyebrow>
+                <Pressable hitSlop={8} onPress={() => router.push('/rituals' as any)}>
+                  <Text style={styles.sectionLink}>{t('rituals.seeAll')} ›</Text>
+                </Pressable>
+              </View>
+              <Pressable
+                style={styles.ritualCard}
+                onPress={() => router.push('/rituals' as any)}>
+                <View style={styles.ritualHead}>
+                  <Ionicons
+                    name={
+                      ritual.context === 'morning' ? 'sunny-outline'
+                      : ritual.context === 'reset' ? 'compass-outline'
+                      : 'moon-outline'
+                    }
+                    size={16}
+                    color={colors.bronze}
+                  />
+                  <Text style={styles.ritualTitle}>{ritual.title}</Text>
+                  <Text style={styles.ritualDuration}>{ritual.duration}</Text>
+                </View>
+                <Text style={styles.ritualIntention}>{ritual.intention}</Text>
+              </Pressable>
+            </View>
+          );
+        })()}
+
         {/* Quick actions */}
         <View style={styles.section}>
           <Eyebrow>{t('home.capture')}</Eyebrow>
@@ -918,6 +954,22 @@ const styles = StyleSheet.create({
   statTileLabel: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 4 },
 
   quickRow: { flexDirection: 'row', gap: spacing.md },
+
+  ritualCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.hairline,
+    gap: spacing.sm,
+  },
+  ritualHead: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  ritualTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14, flex: 1 },
+  ritualDuration: {
+    color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 11,
+    letterSpacing: 0.4, textTransform: 'uppercase',
+  },
+  ritualIntention: { color: colors.textSecondary, fontFamily: type.family.sans, fontStyle: 'italic', fontSize: 13, lineHeight: 20 },
 
   tomorrowCard: { padding: spacing.lg, gap: spacing.sm },
   tomorrowRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

@@ -241,6 +241,12 @@ export default {
       motivated: 'Motivated',
       restless: 'Restless',
     },
+    eveningPromptsTitle: 'Evening reflection',
+    eveningPrompts: [
+      'One thing that went well today.',
+      'One thing that didn\'t — without blame.',
+      'One thing I\'ll meet tomorrow with more calm.',
+    ],
     review: {
       title: 'Weekly review',
       body: 'You logged {count} entries this week. Average mood: {mood}. Keep what worked.',
@@ -346,6 +352,20 @@ export default {
     chatCopied: 'Chat copied',
     clearTitle: 'Clear coach history?',
     clearBody: 'This wipes all coach conversations on this device.',
+  },
+  rituals: {
+    title: 'Rituals',
+    eyebrow: 'Ritual library',
+    heroTitle: 'Short. Deliberate.\nReturned to.',
+    heroBody: 'A ritual is a routine with intention. Three contexts — morning, midday, evening. Read one. Try one. The point is the doing, not the tracking.',
+    context: {
+      morning: 'Morning · claim the day',
+      reset: 'Reset · midday',
+      evening: 'Evening · release',
+    },
+    fine: 'No streaks here. No checkbox. Pick one when you need it.',
+    seeAll: 'See all rituals',
+    todayRitual: 'Today\'s ritual',
   },
   settings: {
     title: 'Settings',

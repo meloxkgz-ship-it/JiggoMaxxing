@@ -16,7 +16,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { useT } from '@/lib/i18n';
+import { useLanguage, useT } from '@/lib/i18n';
+import en from '@/lib/i18n/en';
+import de from '@/lib/i18n/de';
 import { addEntry, todayKey } from '@/lib/journal';
 import { Mood } from '@/lib/types';
 
@@ -32,6 +34,11 @@ const MOODS: { v: Mood; icon: keyof typeof Ionicons.glyphMap }[] = [
 
 export default function JournalEntryScreen() {
   const t = useT();
+  const { lang } = useLanguage();
+  // Show evening reflection prompts after 18:00 local — encourages the
+  // stoic end-of-day review without forcing it on a morning journaler.
+  const showEveningPrompts = new Date().getHours() >= 18;
+  const eveningPrompts: string[] = ((lang === 'de' ? de : en) as any).journal.eveningPrompts ?? [];
   const [weight, setWeight] = useState('');
   const [sleep, setSleep] = useState('');
   const [mood, setMood] = useState<Mood | undefined>(undefined);
@@ -124,6 +131,27 @@ export default function JournalEntryScreen() {
               </View>
             </Field>
 
+            {showEveningPrompts && eveningPrompts.length > 0 && (
+              <View style={styles.promptsCard}>
+                <Text style={styles.promptsTitle}>{t('journal.eveningPromptsTitle')}</Text>
+                {eveningPrompts.map((p, i) => (
+                  <Pressable
+                    key={i}
+                    onPress={() => {
+                      // Append the prompt to the notes if it isn't already there.
+                      const line = `${p} `;
+                      if (!notes.endsWith(line)) {
+                        setNotes(notes ? `${notes.trim()}\n\n${p} ` : `${p} `);
+                      }
+                    }}
+                    style={styles.promptRow}>
+                    <View style={styles.promptDot} />
+                    <Text style={styles.promptText}>{p}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
             <Field label={t('journal.notes')}>
               <TextInput
                 style={[styles.input, styles.notesInput]}
@@ -173,6 +201,32 @@ const styles = StyleSheet.create({
     fontFamily: type.family.sansMedium, fontSize: 15,
   },
   notesInput: { minHeight: 160, fontFamily: type.family.sans, fontSize: 14, lineHeight: 21 },
+
+  promptsCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(176,138,90,0.07)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.22)',
+    gap: 10,
+  },
+  promptsTitle: {
+    color: colors.bronze,
+    fontFamily: type.family.sansMedium,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  promptRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 4 },
+  promptDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: colors.bronze, marginTop: 8 },
+  promptText: {
+    flex: 1,
+    color: colors.textPrimary,
+    fontFamily: type.family.sans,
+    fontStyle: 'italic',
+    fontSize: 13,
+    lineHeight: 19,
+  },
 
   moodRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   moodChip: {
