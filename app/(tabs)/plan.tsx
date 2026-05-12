@@ -161,10 +161,14 @@ export default function PlanScreen() {
                     isCustom
                       ? () =>
                           Alert.alert(
-                            t('common.delete'),
                             it.title,
+                            undefined,
                             [
                               { text: t('common.cancel'), style: 'cancel' },
+                              {
+                                text: t('common.edit'),
+                                onPress: () => router.push({ pathname: '/plan-item-add', params: { id: it.id } } as any),
+                              },
                               {
                                 text: t('common.delete'),
                                 style: 'destructive',

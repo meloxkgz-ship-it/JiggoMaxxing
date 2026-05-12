@@ -27,7 +27,7 @@ import {
   scheduleNudgeNotification,
 } from '@/lib/notifications';
 import { getApiKey, getSettings, saveSettings, setApiKey } from '@/lib/settings';
-import { exportAll, wipeAll } from '@/lib/storage';
+import { exportAll, importAll, wipeAll } from '@/lib/storage';
 import * as Clipboard from 'expo-clipboard';
 import { Settings } from '@/lib/types';
 
@@ -266,19 +266,47 @@ export default function SettingsScreen() {
             <Ionicons name="lock-closed-outline" size={18} color={colors.bronze} />
             <Text style={styles.privacyText}>{t('settings.privacyPledge')}</Text>
           </View>
-          <Pressable
-            style={styles.exportBtn}
-            onPress={async () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-              const data = await exportAll();
-              const json = JSON.stringify(data, null, 2);
-              await Clipboard.setStringAsync(json);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-              Alert.alert(t('settings.exportDone', { n: Object.keys(data).length }));
-            }}>
-            <Ionicons name="download-outline" size={14} color={colors.bronze} />
-            <Text style={styles.exportBtnText}>{t('settings.exportData')}</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
+            <Pressable
+              style={styles.exportBtn}
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                const data = await exportAll();
+                const json = JSON.stringify(data, null, 2);
+                await Clipboard.setStringAsync(json);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+                Alert.alert(t('settings.exportDone', { n: Object.keys(data).length }));
+              }}>
+              <Ionicons name="download-outline" size={14} color={colors.bronze} />
+              <Text style={styles.exportBtnText}>{t('settings.exportData')}</Text>
+            </Pressable>
+            <Pressable
+              style={styles.exportBtn}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                Alert.alert(t('settings.importConfirmTitle'), t('settings.importConfirmBody'), [
+                  { text: t('common.cancel'), style: 'cancel' },
+                  {
+                    text: t('common.confirm'),
+                    style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        const clip = await Clipboard.getStringAsync();
+                        const n = await importAll(clip);
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+                        Alert.alert(t('settings.importDone', { n }));
+                      } catch (e: any) {
+                        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+                        Alert.alert(t('settings.importFail', { msg: e?.message ?? '' }));
+                      }
+                    },
+                  },
+                ]);
+              }}>
+              <Ionicons name="cloud-upload-outline" size={14} color={colors.bronze} />
+              <Text style={styles.exportBtnText}>{t('settings.importData')}</Text>
+            </Pressable>
+          </View>
         </Section>
 
         <Section title={t('settings.about')}>

@@ -75,6 +75,21 @@ export async function deleteCustomItem(id: string): Promise<void> {
   await setJSON(CUSTOM_KEY, list.filter((x) => x.id !== id));
 }
 
+export async function getCustomItem(id: string): Promise<PlanItem | null> {
+  const list = await getJSON<PlanItem[]>(CUSTOM_KEY, []);
+  return list.find((x) => x.id === id) ?? null;
+}
+
+export async function updateCustomItem(id: string, patch: Partial<PlanItem>): Promise<void> {
+  const list = await getJSON<PlanItem[]>(CUSTOM_KEY, []);
+  const idx = list.findIndex((x) => x.id === id);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...patch };
+    list.sort((a, b) => a.time.localeCompare(b.time));
+    await setJSON(CUSTOM_KEY, list);
+  }
+}
+
 /** Active plan = template items + any user-added custom items, sorted by time. */
 export async function getActivePlan(): Promise<PlanItem[]> {
   const tpl = await getActiveTemplate();

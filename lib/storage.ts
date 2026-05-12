@@ -48,6 +48,30 @@ export async function wipeAll(): Promise<void> {
   } catch {}
 }
 
+/**
+ * Replace every key under the JIGGO namespace with the contents of a
+ * dump produced by `exportAll()`. Returns the count of keys written or
+ * throws on parse failure.
+ */
+export async function importAll(json: string): Promise<number> {
+  let parsed: unknown;
+  try { parsed = JSON.parse(json); }
+  catch (e: any) { throw new Error('Invalid JSON: ' + (e?.message ?? '')); }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('Expected a JSON object at the top level.');
+  }
+  await wipeAll();
+  let count = 0;
+  for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+    if (typeof k !== 'string') continue;
+    try {
+      await AsyncStorage.setItem(NS + k, JSON.stringify(v));
+      count++;
+    } catch {}
+  }
+  return count;
+}
+
 /** Dump every key under the JIGGO namespace into a single JSON object. */
 export async function exportAll(): Promise<Record<string, unknown>> {
   try {

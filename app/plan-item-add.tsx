@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
-import { useState } from 'react';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useT } from '@/lib/i18n';
-import { addCustomItem } from '@/lib/plan';
+import { addCustomItem, getCustomItem, updateCustomItem } from '@/lib/plan';
 import { PlanItem } from '@/lib/types';
 
 type Cat = PlanItem['category'];
@@ -25,6 +25,8 @@ const CATS: Cat[] = ['Grooming', 'Physique', 'Style', 'Mind'];
 
 export default function PlanItemAddScreen() {
   const t = useT();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const editId = params.id ?? null;
   const [title, setTitle] = useState('');
   const [hour, setHour] = useState('07');
   const [minute, setMinute] = useState('00');
@@ -32,17 +34,33 @@ export default function PlanItemAddScreen() {
   const [category, setCategory] = useState<Cat>('Grooming');
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!editId) return;
+    (async () => {
+      const it = await getCustomItem(editId);
+      if (!it) return;
+      setTitle(it.title);
+      const [h, m] = it.time.split(':');
+      setHour(h ?? '07');
+      setMinute(m ?? '00');
+      setDuration(it.duration);
+      setCategory(it.category);
+    })();
+  }, [editId]);
+
   const save = async () => {
     if (saving || !title.trim()) return;
     setSaving(true);
     const h = String(Math.max(0, Math.min(23, parseInt(hour, 10) || 7))).padStart(2, '0');
     const m = String(Math.max(0, Math.min(59, parseInt(minute, 10) || 0))).padStart(2, '0');
-    await addCustomItem({
+    const payload = {
       title: title.trim(),
       time: `${h}:${m}`,
       duration: duration.trim() || '10m',
       category,
-    });
+    };
+    if (editId) await updateCustomItem(editId, payload);
+    else await addCustomItem(payload);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     router.back();
   };
