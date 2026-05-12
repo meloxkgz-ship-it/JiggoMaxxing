@@ -436,6 +436,8 @@ export default function CoachScreen() {
           />
           <Pressable
             onPress={() => send(input)}
+            accessibilityRole="button"
+            accessibilityLabel="Send message to coach"
             style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
             disabled={!input.trim() || busy}>
             <Ionicons name="arrow-up" size={18} color={colors.textOnBronze} />

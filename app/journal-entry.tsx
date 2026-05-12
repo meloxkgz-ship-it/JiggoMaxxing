@@ -75,6 +75,9 @@ export default function JournalEntryScreen() {
           hitSlop={10}
           onPress={save}
           disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.save')}
+          accessibilityState={{ busy: saving }}
           style={[styles.saveBtn, saving && { opacity: 0.5 }]}>
           <Text style={styles.saveBtnText}>{saving ? t('common.saving') : t('common.save')}</Text>
         </Pressable>
@@ -121,6 +124,9 @@ export default function JournalEntryScreen() {
                       Haptics.selectionAsync().catch(() => {});
                       setMood(mood === m.v ? undefined : m.v);
                     }}
+                    accessibilityRole="radio"
+                    accessibilityLabel={t(`journal.moods.${m.v}`)}
+                    accessibilityState={{ selected: mood === m.v }}
                     style={[styles.moodChip, mood === m.v && styles.moodChipActive]}>
                     <Ionicons name={m.icon} size={14} color={mood === m.v ? colors.textOnBronze : colors.bronze} />
                     <Text style={[styles.moodText, mood === m.v && styles.moodTextActive]}>

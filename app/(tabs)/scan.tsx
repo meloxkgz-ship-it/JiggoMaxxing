@@ -139,7 +139,13 @@ export default function ScanScreen() {
             )}
           </View>
 
-          <Pressable style={styles.cta} onPress={offer} disabled={busy}>
+          <Pressable
+            style={styles.cta}
+            onPress={offer}
+            disabled={busy}
+            accessibilityRole="button"
+            accessibilityLabel={latest ? t('scan.newScan') : t('scan.firstScan')}
+            accessibilityState={{ busy }}>
             <Ionicons name="scan" size={16} color={colors.textOnBronze} />
             <Text style={styles.ctaText}>{busy ? t('scan.analysing') : latest ? t('scan.newScan') : t('scan.firstScan')}</Text>
           </Pressable>

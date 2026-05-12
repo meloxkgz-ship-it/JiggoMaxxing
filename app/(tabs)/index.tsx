@@ -284,6 +284,9 @@ export default function HomeHubScreen() {
           <Animated.View entering={FadeInDown.duration(420).delay(80)}>
           <Pressable
             onPress={toggleNudge}
+            accessibilityRole="button"
+            accessibilityLabel={nudgeDone ? t('home.nudgeDone') : t('home.nudgeMark')}
+            accessibilityState={{ checked: nudgeDone }}
             style={[styles.nudgeCard, nudgeDone && styles.nudgeCardDone]}>
             <View style={styles.nudgeHead}>
               <View style={styles.nudgeBadge}>

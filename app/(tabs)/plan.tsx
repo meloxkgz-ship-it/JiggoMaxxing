@@ -223,6 +223,10 @@ export default function PlanScreen() {
                 <Pressable
                   key={it.id}
                   onPress={() => onToggle(it.id)}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={`${it.time} · ${it.title}`}
+                  accessibilityState={{ checked: done }}
+                  accessibilityHint={isCustom ? 'Long press to edit or delete' : undefined}
                   onLongPress={
                     isCustom
                       ? () =>
