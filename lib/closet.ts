@@ -74,6 +74,20 @@ export async function deleteItem(id: string): Promise<void> {
   await setJSON(KEY, list.filter((i) => i.id !== id));
 }
 
+export async function updateItem(id: string, patch: Partial<ClosetItem>): Promise<void> {
+  const list = await getJSON<ClosetItem[]>(KEY, []);
+  const idx = list.findIndex((i) => i.id === id);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...patch };
+    await setJSON(KEY, list);
+  }
+}
+
+export async function getItem(id: string): Promise<ClosetItem | null> {
+  const list = await getJSON<ClosetItem[]>(KEY, []);
+  return list.find((i) => i.id === id) ?? null;
+}
+
 // ───────── Curated palettes & looks ─────────
 
 /** Color palette: editorial, masculine, archive-grade. */

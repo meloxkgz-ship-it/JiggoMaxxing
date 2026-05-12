@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { Stack, router } from 'expo-router';
-import { useState } from 'react';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -25,13 +25,17 @@ import {
   Category,
   COLORS,
   Archetype,
+  getItem,
   Occasion,
   OCCASIONS,
+  updateItem,
 } from '@/lib/closet';
 import { useT } from '@/lib/i18n';
 
 export default function ClosetAddScreen() {
   const t = useT();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const editId = params.id ?? null;
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [category, setCategory] = useState<Category>('top');
@@ -39,6 +43,21 @@ export default function ClosetAddScreen() {
   const [archetypes, setArchetypes] = useState<Archetype[]>(['tonal']);
   const [occasions, setOccasions] = useState<Occasion[]>(['weekend']);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editId) return;
+    (async () => {
+      const it = await getItem(editId);
+      if (!it) return;
+      setPhotoUri(it.photoUri ?? null);
+      setName(it.name);
+      setCategory(it.category);
+      const idx = COLORS.findIndex((c) => c.hex.toLowerCase() === it.color.toLowerCase());
+      setColorIdx(idx >= 0 ? idx : 0);
+      setArchetypes(it.archetypes);
+      setOccasions(it.occasions);
+    })();
+  }, [editId]);
 
   const pickPhoto = async (source: 'camera' | 'library') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -63,7 +82,7 @@ export default function ClosetAddScreen() {
     if (saving) return;
     setSaving(true);
     const color = COLORS[colorIdx];
-    await addItem({
+    const payload = {
       name: name.trim() || t(`style.categories.${category}`),
       category,
       color: color.hex,
@@ -71,7 +90,12 @@ export default function ClosetAddScreen() {
       archetypes,
       occasions,
       photoUri: photoUri ?? undefined,
-    });
+    };
+    if (editId) {
+      await updateItem(editId, payload);
+    } else {
+      await addItem(payload);
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     router.back();
   };

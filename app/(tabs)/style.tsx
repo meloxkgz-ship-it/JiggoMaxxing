@@ -168,7 +168,11 @@ function ClosetView({ items, onDelete, onSeed }: { items: ClosetItem[]; onDelete
   return (
     <View style={styles.grid}>
       {items.map((it) => (
-        <Pressable key={it.id} style={styles.itemCard} onLongPress={() => onDelete(it)}>
+        <Pressable
+          key={it.id}
+          style={styles.itemCard}
+          onPress={() => router.push({ pathname: '/closet-add', params: { id: it.id } } as any)}
+          onLongPress={() => onDelete(it)}>
           <View style={styles.itemImage}>
             {it.photoUri ? (
               <Image source={{ uri: it.photoUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
