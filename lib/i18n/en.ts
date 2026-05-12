@@ -122,6 +122,7 @@ export default {
     lastReading: 'Last reading · {when}',
     history: 'History',
     historyCount: '{count} scans',
+    trend: 'Trend · last 8',
     noScans: 'No scans yet. Take your first to set a private baseline.',
     deleteTitle: 'Delete scan?',
     deleteBody: 'Removed locally — cannot be recovered.',

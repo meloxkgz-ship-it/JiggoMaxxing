@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Card } from '@/components/Card';
@@ -39,30 +39,38 @@ export default function HomeHubScreen() {
   const [nudgeDone, setNudgeDoneState] = useState(false);
   const [nudgeStreak, setNudgeStreak] = useState(0);
   const [journalStreak, setJournalStreak] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(useCallback(() => {
-    (async () => {
-      const [s, sc, je, pc, pp, nd, ns, js] = await Promise.all([
-        getSettings(),
-        listScans(),
-        listEntries(),
-        getCompletion(),
-        getActivePlan(),
-        isNudgeDone(),
-        getNudgeStreak(),
-        getStreak(),
-      ]);
-      setSettings(s);
-      setScan(sc[0] ?? null);
-      setJournal(je);
-      setPlan(pp);
-      setPlanDone((pc[todayKey()] ?? []).length);
-      setNudge(getTodayNudge(lang));
-      setNudgeDoneState(nd);
-      setNudgeStreak(ns);
-      setJournalStreak(js);
-    })();
-  }, [lang]));
+  const reload = useCallback(async () => {
+    const [s, sc, je, pc, pp, nd, ns, js] = await Promise.all([
+      getSettings(),
+      listScans(),
+      listEntries(),
+      getCompletion(),
+      getActivePlan(),
+      isNudgeDone(),
+      getNudgeStreak(),
+      getStreak(),
+    ]);
+    setSettings(s);
+    setScan(sc[0] ?? null);
+    setJournal(je);
+    setPlan(pp);
+    setPlanDone((pc[todayKey()] ?? []).length);
+    setNudge(getTodayNudge(lang));
+    setNudgeDoneState(nd);
+    setNudgeStreak(ns);
+    setJournalStreak(js);
+  }, [lang]);
+
+  useFocusEffect(useCallback(() => { reload(); }, [reload]));
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    await reload();
+    setRefreshing(false);
+  };
 
   const toggleNudge = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
@@ -99,7 +107,14 @@ export default function HomeHubScreen() {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.bronze}
+          />
+        }>
         {/* Top bar */}
         <View style={styles.topbar}>
           <JMMark size={36} />

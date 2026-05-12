@@ -146,6 +146,13 @@ export default function ScanScreen() {
           </Pressable>
         )}
 
+        {scans.length >= 2 && (
+          <View style={styles.trendCard}>
+            <Eyebrow>{t('scan.trend')}</Eyebrow>
+            <TrendSpark scores={scans.slice(0, 8).map((s) => s.overall).reverse()} />
+          </View>
+        )}
+
         <View style={styles.section}>
           <View style={styles.sectionHead}>
             <Eyebrow>{t('scan.history')}</Eyebrow>
@@ -182,6 +189,27 @@ export default function ScanScreen() {
 
         <View style={{ height: 120 }} />
       </ScrollView>
+    </View>
+  );
+}
+
+function TrendSpark({ scores }: { scores: number[] }) {
+  if (scores.length === 0) return null;
+  const min = Math.min(...scores);
+  const max = Math.max(...scores);
+  const range = Math.max(8, max - min);
+  return (
+    <View style={styles.trendRow}>
+      {scores.map((s, i) => {
+        const h = ((s - min) / range) * 64 + 8;
+        const isLast = i === scores.length - 1;
+        return (
+          <View key={i} style={styles.trendCol}>
+            <Text style={styles.trendValue}>{s}</Text>
+            <View style={[styles.trendBar, { height: h, backgroundColor: isLast ? colors.bronze : colors.surfaceMuted }]} />
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -258,4 +286,17 @@ const styles = StyleSheet.create({
   histDate: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13 },
   histInsight: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 12, marginTop: 2 },
   histScore: { color: colors.bronze, fontFamily: type.family.sansBlack, fontSize: 22, letterSpacing: type.letterSpacing.tight },
+
+  trendCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.hairline,
+    gap: spacing.md,
+  },
+  trendRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, height: 96, marginTop: 6 },
+  trendCol: { flex: 1, alignItems: 'center', gap: 4 },
+  trendValue: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 9.5, letterSpacing: 0.3 },
+  trendBar: { width: '70%', borderRadius: 3, minHeight: 4 },
 });

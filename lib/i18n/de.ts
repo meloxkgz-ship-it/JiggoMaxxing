@@ -122,6 +122,7 @@ export default {
     lastReading: 'Letzte Messung · {when}',
     history: 'Verlauf',
     historyCount: '{count} Scans',
+    trend: 'Trend · letzte 8',
     noScans: 'Noch keine Scans. Nimm deinen ersten auf, um eine private Basis zu setzen.',
     deleteTitle: 'Scan löschen?',
     deleteBody: 'Lokal entfernt — nicht wiederherstellbar.',
