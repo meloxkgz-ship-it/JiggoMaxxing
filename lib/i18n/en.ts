@@ -280,6 +280,7 @@ export default {
       discipline: { title: 'Break a slump', body: 'When the streak\'s gone. Restart cleanly.' },
     },
     error: 'Coach unavailable. Check your network or API key.',
+    copied: 'Copied',
     clearTitle: 'Clear coach history?',
     clearBody: 'This wipes all coach conversations on this device.',
   },

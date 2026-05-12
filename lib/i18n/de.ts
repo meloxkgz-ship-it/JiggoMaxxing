@@ -280,6 +280,7 @@ export default {
       discipline: { title: 'Slump brechen', body: 'Wenn der Streak weg ist. Sauber neu starten.' },
     },
     error: 'Coach nicht erreichbar. Prüf Netzwerk oder API-Key.',
+    copied: 'Kopiert',
     clearTitle: 'Coach-Verlauf löschen?',
     clearBody: 'Löscht alle Coach-Konversationen auf diesem Gerät.',
   },

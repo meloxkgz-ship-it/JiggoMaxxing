@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -52,7 +53,15 @@ export default function CoachScreen() {
   const [streaming, setStreaming] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<'chat' | 'topics'>('chat');
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+
+  const copy = async (text: string, idx: number) => {
+    await Clipboard.setStringAsync(text);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 1200);
+  };
 
   const refresh = useCallback(async () => {
     const [k, h] = await Promise.all([getApiKey(), listHistory()]);
@@ -184,26 +193,32 @@ export default function CoachScreen() {
               </View>
             )}
 
-            {turns.map((t, i) => (
+            {turns.map((turn, i) => (
               <View
                 key={i}
-                style={[styles.bubbleRow, t.role === 'user' ? styles.bubbleRowRight : styles.bubbleRowLeft]}>
-                {t.role === 'assistant' && (
+                style={[styles.bubbleRow, turn.role === 'user' ? styles.bubbleRowRight : styles.bubbleRowLeft]}>
+                {turn.role === 'assistant' && (
                   <View style={styles.coachAvatar}>
                     <Text style={styles.coachAvatarText}>JM</Text>
                   </View>
                 )}
-                <View
+                <Pressable
+                  onLongPress={() => copy(turn.content, i)}
+                  delayLongPress={350}
                   style={[
                     styles.bubble,
-                    t.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant,
+                    turn.role === 'user' ? styles.bubbleUser : styles.bubbleAssistant,
                   ]}>
-                  {t.role === 'user' ? (
-                    <Text style={[styles.bubbleText, styles.bubbleTextUser]}>{t.content}</Text>
+                  {copiedIdx === i ? (
+                    <Text style={[styles.bubbleText, turn.role === 'user' && styles.bubbleTextUser, { fontStyle: 'italic', opacity: 0.7 }]}>
+                      ✓ {t('coach.copied')}
+                    </Text>
+                  ) : turn.role === 'user' ? (
+                    <Text style={[styles.bubbleText, styles.bubbleTextUser]}>{turn.content}</Text>
                   ) : (
-                    <CoachMessage text={t.content} />
+                    <CoachMessage text={turn.content} />
                   )}
-                </View>
+                </Pressable>
               </View>
             ))}
 
