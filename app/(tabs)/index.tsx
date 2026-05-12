@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -202,7 +202,7 @@ export default function HomeHubScreen() {
               </Pressable>
             </View>
             <View style={styles.heroNumberRow}>
-              <Text style={styles.heroNumber}>{overall ?? '—'}</Text>
+              <CountUp value={overall} style={styles.heroNumber} fallback="—" />
               {overall !== null && <Text style={styles.heroOutOf}>/100</Text>}
             </View>
             <Text style={styles.heroNote}>
@@ -385,6 +385,34 @@ export default function HomeHubScreen() {
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function CountUp({
+  value,
+  style,
+  fallback,
+  duration = 700,
+}: {
+  value: number | null;
+  style: any;
+  fallback: string;
+  duration?: number;
+}) {
+  const [display, setDisplay] = useState<number | null>(value == null ? null : 0);
+  useEffect(() => {
+    if (value == null) { setDisplay(null); return; }
+    let raf = 0;
+    const start = Date.now();
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setDisplay(Math.round(value * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+  return <Text style={style}>{display == null ? fallback : display}</Text>;
 }
 
 function StatTile({

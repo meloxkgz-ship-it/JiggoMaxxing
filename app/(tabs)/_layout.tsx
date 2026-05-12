@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { BlurView } from 'expo-blur';
 import { colors, radius, type } from '@/constants/jiggo-theme';
 import { useT } from '@/lib/i18n';
@@ -38,6 +39,15 @@ export default function TabsLayout() {
           </BlurView>
         ),
         tabBarItemStyle: { paddingTop: 6 },
+        tabBarButton: (props) => (
+          <Pressable
+            {...(props as any)}
+            onPress={(e) => {
+              Haptics.selectionAsync().catch(() => {});
+              (props as any).onPress?.(e);
+            }}
+          />
+        ),
       }}>
       {TABS.map((tab) => (
         <Tabs.Screen
