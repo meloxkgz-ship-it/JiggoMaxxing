@@ -71,6 +71,13 @@ export default function LookDetailScreen() {
           </View>
         </View>
 
+        <Pressable
+          style={styles.builderCta}
+          onPress={() => router.replace({ pathname: '/builder', params: { archetype: look.archetype, occasion: look.occasion } } as any)}>
+          <Ionicons name="sparkles" size={16} color={colors.textOnBronze} />
+          <Text style={styles.builderCtaText}>{t('style.buildFromLook')}</Text>
+        </Pressable>
+
         <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
@@ -132,4 +139,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bronzeOnBlack,
   },
   copyText: { color: colors.textPrimary, fontFamily: type.family.sans, fontSize: 14, lineHeight: 21, flex: 1 },
+
+  builderCta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, paddingVertical: 14, borderRadius: radius.pill,
+    backgroundColor: colors.bronze, marginTop: spacing.lg,
+  },
+  builderCtaText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 14, letterSpacing: 0.2 },
 });

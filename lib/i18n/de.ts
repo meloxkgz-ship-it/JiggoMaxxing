@@ -237,6 +237,9 @@ export default {
     seedCta: 'Essentials einfügen',
     seedDone: '{n} Essentials hinzugefügt',
     lookCopyTitle: 'So baust du den Look nach',
+    shuffle: 'Look shufflen',
+    todayPick: 'Pick des Tages',
+    buildFromLook: 'Aus meinem Schrank bauen',
   },
   coach: {
     title: 'Coach',
@@ -290,6 +293,8 @@ export default {
     version: 'Version',
     build: 'Build',
     tone: 'Tonalität',
+    why: 'Warum keine Bewertungen',
+    whySub: 'Lies den Pakt und die Philosophie.',
     danger: 'Gefahrenzone',
     resetAll: 'Alle Daten zurücksetzen',
     resetTitle: 'Alles zurücksetzen?',

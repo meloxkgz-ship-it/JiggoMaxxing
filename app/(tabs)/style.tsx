@@ -74,6 +74,8 @@ export default function StyleScreen() {
           <ClosetView items={items} onDelete={onDelete} onSeed={async () => setItems(await listItems())} />
         ) : (
           <>
+            {/* Today's pick — deterministic by day-of-year so it doesn't shuffle each visit */}
+            <TodaysPickCard />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
               {FILTERS.map((f) => (
                 <Pressable
@@ -151,6 +153,33 @@ function ClosetView({ items, onDelete, onSeed }: { items: ClosetItem[]; onDelete
   );
 }
 
+function TodaysPickCard() {
+  const t = useT();
+  // Deterministic per day-of-year so the pick is consistent through the day.
+  const day = Math.floor((Date.now() / 86400000));
+  const look = LOOKS[day % LOOKS.length];
+
+  return (
+    <Pressable
+      style={styles.todaysPick}
+      onPress={() => router.push({ pathname: '/look-detail', params: { id: look.id } } as any)}>
+      <View style={styles.todaysPickPaletteBg}>
+        {look.palette.map((c, i) => (
+          <View key={i} style={[styles.todaysPickStripe, { backgroundColor: c, flex: 1 }]} />
+        ))}
+      </View>
+      <View style={styles.todaysPickOverlay}>
+        <View style={styles.todaysPickBadge}>
+          <Ionicons name="star" size={11} color={colors.bronze} />
+          <Text style={styles.todaysPickBadgeText}>{t('style.todayPick')}</Text>
+        </View>
+        <Text style={styles.todaysPickTitle}>{look.title}</Text>
+        <Text style={styles.todaysPickMeta}>{t(`style.archetypes.${look.archetype}`)} · {t(`style.occasions.${look.occasion}`)}</Text>
+      </View>
+    </Pressable>
+  );
+}
+
 function LookCard({ look, t }: { look: Look; t: (k: string, vars?: any) => string }) {
   return (
     <Pressable
@@ -208,6 +237,45 @@ const styles = StyleSheet.create({
   },
   itemCatText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 9.5, letterSpacing: 0.4, textTransform: 'uppercase' },
   itemLabel: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 12, paddingLeft: 2 },
+
+  todaysPick: {
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
+    height: 160,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.28)',
+  },
+  todaysPickPaletteBg: { ...StyleSheet.absoluteFillObject, flexDirection: 'row' },
+  todaysPickStripe: { height: '100%' },
+  todaysPickOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(8,7,6,0.5)',
+    padding: spacing.lg,
+    justifyContent: 'flex-end',
+    gap: 6,
+  },
+  todaysPickBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 9, paddingVertical: 4,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(8,7,6,0.65)',
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  todaysPickBadgeText: { color: colors.bronze, fontFamily: type.family.sansSemi, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase' },
+  todaysPickTitle: {
+    color: colors.textPrimary, fontFamily: type.family.sansBlack,
+    fontSize: 22, letterSpacing: type.letterSpacing.tight,
+    textShadowColor: 'rgba(0,0,0,0.55)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 6,
+  },
+  todaysPickMeta: {
+    color: colors.bronze, fontFamily: type.family.sansMedium,
+    fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase',
+  },
 
   looksGrid: { paddingHorizontal: spacing.xl, gap: spacing.md },
   lookCard: {

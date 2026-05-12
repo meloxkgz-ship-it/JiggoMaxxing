@@ -184,7 +184,16 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title={t('settings.about')}>
-          <InfoRow label={t('settings.version')} value="1.1.0" />
+          <Pressable
+            style={styles.whyRow}
+            onPress={() => router.push('/why' as any)}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.whyTitle}>{t('settings.why')}</Text>
+              <Text style={styles.whySub}>{t('settings.whySub')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+          </Pressable>
+          <InfoRow label={t('settings.version')} value="1.2.0" />
           <InfoRow label={t('settings.build')} value="iOS · React Native" />
           <InfoRow label={t('settings.tone')} value={t('app.motto')} />
         </Section>
@@ -284,6 +293,16 @@ const styles = StyleSheet.create({
   },
   infoLabel: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 13 },
   infoValue: { color: colors.textPrimary, fontFamily: type.family.sansMedium, fontSize: 13 },
+
+  whyRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    paddingVertical: 14, paddingHorizontal: spacing.lg,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.22)',
+    backgroundColor: colors.bronzeOnBlack,
+  },
+  whyTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14 },
+  whySub: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12, marginTop: 2 },
 
   dangerBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   Pressable,
@@ -29,9 +29,10 @@ import { useT } from '@/lib/i18n';
 
 export default function BuilderScreen() {
   const t = useT();
+  const params = useLocalSearchParams<{ archetype?: Archetype; occasion?: Occasion }>();
   const [items, setItems] = useState<ClosetItem[]>([]);
-  const [occasion, setOccasion] = useState<Occasion>('weekend');
-  const [archetype, setArchetype] = useState<Archetype>('tonal');
+  const [occasion, setOccasion] = useState<Occasion>(params.occasion ?? 'weekend');
+  const [archetype, setArchetype] = useState<Archetype>(params.archetype ?? 'tonal');
   const [outfit, setOutfit] = useState<Outfit | null>(null);
 
   useEffect(() => {
