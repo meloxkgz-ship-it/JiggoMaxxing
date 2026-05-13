@@ -247,6 +247,23 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title={t('settings.coach')} subtitle={t('settings.coachSub')}>
+          {/* JIGGO Pro upsell — sits above the BYO-key field so the upgrade
+              path is visible without making BYO feel second-class. */}
+          <Pressable
+            style={styles.proRow}
+            onPress={() => router.push('/upgrade' as any)}
+            accessibilityRole="button"
+            accessibilityLabel={t('upgrade.unlockSettings')}>
+            <View style={styles.proGlyph}>
+              <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.proTitle}>{t('upgrade.unlockSettings')}</Text>
+              <Text style={styles.proSub}>{t('upgrade.unlockSettingsSub')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.bronze} />
+          </Pressable>
+
           <View style={styles.keyRow}>
             <TextInput
               style={[styles.input, { flex: 1 }]}
@@ -433,6 +450,23 @@ const styles = StyleSheet.create({
   segActive: { backgroundColor: colors.bronze },
   segText: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 11 },
   segTextActive: { color: colors.textOnBronze },
+
+  proRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(176,138,90,0.10)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.35)',
+    marginBottom: spacing.md,
+  },
+  proGlyph: {
+    width: 28, height: 28, borderRadius: 9,
+    backgroundColor: colors.bronze,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  proTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14 },
+  proSub: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 11.5, marginTop: 1 },
 
   keyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   eyeBtn: {

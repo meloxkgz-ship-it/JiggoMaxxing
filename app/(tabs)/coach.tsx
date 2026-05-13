@@ -466,9 +466,14 @@ function CoachLocked({ t }: { t: (k: string, vars?: any) => string }) {
         <Eyebrow>{t('coach.title')}</Eyebrow>
         <Text style={styles.lockedTitle}>{t('coach.lockedTitle')}</Text>
         <Text style={styles.lockedBody}>{t('coach.lockedBody')}</Text>
-        <Pressable style={styles.lockedCta} onPress={() => router.push('/settings' as any)}>
-          <Ionicons name="key-outline" size={16} color={colors.textOnBronze} />
-          <Text style={styles.lockedCtaText}>{t('coach.openSettings')}</Text>
+        {/* Primary path: Pro unlock. Secondary: BYO key for power users. */}
+        <Pressable style={styles.lockedCta} onPress={() => router.push('/upgrade' as any)}>
+          <Ionicons name="sparkles" size={16} color={colors.textOnBronze} />
+          <Text style={styles.lockedCtaText}>{t('upgrade.unlockSettings')}</Text>
+        </Pressable>
+        <Pressable style={styles.lockedSecondary} onPress={() => router.push('/settings' as any)}>
+          <Ionicons name="key-outline" size={14} color={colors.bronze} />
+          <Text style={styles.lockedSecondaryText}>{t('coach.openSettings')}</Text>
         </Pressable>
         <Text style={styles.fine}>{t('coach.fine')}</Text>
       </ScrollView>
@@ -606,5 +611,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   lockedCtaText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 14, letterSpacing: 0.2 },
+  lockedSecondary: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: spacing.lg, paddingVertical: 10,
+    marginTop: spacing.sm,
+  },
+  lockedSecondaryText: { color: colors.bronze, fontFamily: type.family.sansMedium, fontSize: 12.5, letterSpacing: 0.2 },
   fine: { color: colors.textTertiary, fontFamily: type.family.sans, fontSize: 12, lineHeight: 18, marginTop: spacing.md },
 });
