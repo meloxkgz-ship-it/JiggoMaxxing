@@ -58,6 +58,9 @@ export default function HomeHubScreen() {
   // Score of the scan before the most recent one — used to show a quiet
   // "+3 vs last reading" delta on the Edge Index. Null when fewer than 2.
   const [previousScanOverall, setPreviousScanOverall] = useState<number | null>(null);
+  // Last 8 scan scores, oldest → newest, used to render a tiny sparkline
+  // under the Edge hero. Renders only when there are 2+ scans.
+  const [scanSeries, setScanSeries] = useState<number[]>([]);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [plan, setPlan] = useState<PlanItem[]>([]);
   const [planDone, setPlanDone] = useState(0);
@@ -96,6 +99,7 @@ export default function HomeHubScreen() {
     setSettings(s);
     setScan(sc[0] ?? null);
     setPreviousScanOverall(sc.length >= 2 ? sc[1].overall : null);
+    setScanSeries(sc.slice(0, 8).reverse().map((s) => s.overall));
     // Compute the recap only on Sundays — the card is hidden the rest of
     // the week and the storage round-trip isn't worth paying.
     if (isSunday()) {
@@ -386,6 +390,32 @@ export default function HomeHubScreen() {
             <Text style={styles.heroNote}>
               {scan?.insight ?? t('home.edgeIndexEmpty')}
             </Text>
+
+            {/* Sparkline — 8 most recent scan scores, oldest → newest.
+                Each bar normalised against the local min/max of the series
+                so small drifts read clearly without flattening at 100%. */}
+            {scanSeries.length >= 2 && (() => {
+              const min = Math.min(...scanSeries);
+              const max = Math.max(...scanSeries);
+              const range = Math.max(8, max - min);
+              return (
+                <View style={styles.sparkRow}>
+                  {scanSeries.map((v, i) => {
+                    const h = ((v - min) / range) * 22 + 4;
+                    const isLast = i === scanSeries.length - 1;
+                    return (
+                      <View
+                        key={i}
+                        style={[
+                          styles.sparkBar,
+                          { height: h, backgroundColor: isLast ? colors.bronze : 'rgba(176,138,90,0.35)' },
+                        ]}
+                      />
+                    );
+                  })}
+                </View>
+              );
+            })()}
 
             <View style={styles.pillarsRow}>
               {PILLARS.map((p, i) => {
@@ -939,6 +969,13 @@ const styles = StyleSheet.create({
   deltaChipUp:   { borderColor: 'rgba(126,158,122,0.35)', backgroundColor: 'rgba(126,158,122,0.10)' },
   deltaChipDown: { borderColor: 'rgba(176,88,79,0.35)',  backgroundColor: 'rgba(176,88,79,0.10)' },
   deltaChipText: { fontFamily: type.family.sansBlack, fontSize: 11, letterSpacing: 0.4 },
+  sparkRow: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: 4,
+    marginTop: spacing.md,
+    height: 30,
+  },
+  sparkBar: { flex: 1, borderRadius: 2, minHeight: 4 },
+
   heroNote: {
     color: colors.textSecondary,
     fontFamily: type.family.sans,
