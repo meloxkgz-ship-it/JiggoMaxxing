@@ -391,6 +391,20 @@ export default function HomeHubScreen() {
               {scan?.insight ?? t('home.edgeIndexEmpty')}
             </Text>
 
+            {/* When no scans exist, surface a quiet inline CTA inside the
+                hero — saves the user one tap and reads as an invitation
+                rather than empty-state friction. */}
+            {!scan && (
+              <Pressable
+                style={styles.heroEmptyCta}
+                onPress={() => router.push('/scan' as any)}
+                accessibilityRole="button"
+                accessibilityLabel={t('scan.firstScan')}>
+                <Ionicons name="scan-outline" size={14} color={colors.textOnBronze} />
+                <Text style={styles.heroEmptyCtaText}>{t('scan.firstScan')}</Text>
+              </Pressable>
+            )}
+
             {/* Sparkline — 8 most recent scan scores, oldest → newest.
                 Each bar normalised against the local min/max of the series
                 so small drifts read clearly without flattening at 100%. */}
@@ -969,6 +983,16 @@ const styles = StyleSheet.create({
   deltaChipUp:   { borderColor: 'rgba(126,158,122,0.35)', backgroundColor: 'rgba(126,158,122,0.10)' },
   deltaChipDown: { borderColor: 'rgba(176,88,79,0.35)',  backgroundColor: 'rgba(176,88,79,0.10)' },
   deltaChipText: { fontFamily: type.family.sansBlack, fontSize: 11, letterSpacing: 0.4 },
+  heroEmptyCta: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg, paddingVertical: 11,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bronze,
+    alignSelf: 'flex-start',
+  },
+  heroEmptyCtaText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 13, letterSpacing: 0.2 },
+
   sparkRow: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 4,
     marginTop: spacing.md,
