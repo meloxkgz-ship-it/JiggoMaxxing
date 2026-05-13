@@ -22,7 +22,7 @@ import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
 import { seedStarterPlanFromGoals } from '@/lib/plan';
 import { saveSettings } from '@/lib/settings';
 
-const STEPS = ['intro', 'pact', 'goals', 'experience', 'tour', 'profile'] as const;
+const STEPS = ['intro', 'pact', 'goals', 'experience', 'tour', 'profile', 'pro'] as const;
 type Step = typeof STEPS[number];
 
 const GOALS: { v: 'grooming' | 'physique' | 'style' | 'confidence' | 'discipline'; icon: any }[] = [
@@ -66,7 +66,7 @@ export default function OnboardingScreen() {
     setGoals((prev) => prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]);
   };
 
-  const finish = async () => {
+  const finish = async (openUpgrade = false) => {
     await saveSettings({
       name: name.trim() || undefined,
       goalKg: goal ? parseFloat(goal) : undefined,
@@ -79,6 +79,11 @@ export default function OnboardingScreen() {
       await seedStarterPlanFromGoals(goals, t('plan.yourEdgeTemplate'));
     }
     router.replace('/(tabs)' as any);
+    if (openUpgrade) {
+      // Stack the upgrade modal on top of tabs so the user can swipe it
+      // away naturally if they change their mind.
+      setTimeout(() => router.push('/upgrade' as any), 350);
+    }
   };
 
   return (
@@ -279,12 +284,32 @@ export default function OnboardingScreen() {
                     placeholderTextColor={colors.textTertiary}
                   />
                 </View>
-                <Pressable style={styles.cta} onPress={finish}>
-                  <Text style={styles.ctaText}>{t('onboarding.enter')}</Text>
+                <Pressable style={styles.cta} onPress={next}>
+                  <Text style={styles.ctaText}>{t('common.continue')}</Text>
                   <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
                 </Pressable>
-                <Pressable onPress={finish}>
+                <Pressable onPress={() => finish()}>
                   <Text style={styles.skip}>{t('onboarding.skipForNow')}</Text>
+                </Pressable>
+              </>
+            )}
+
+            {step === 'pro' && (
+              <>
+                <Eyebrow>{t('upgrade.eyebrow')}</Eyebrow>
+                <Text style={styles.title}>{t('onboarding.proTitle')}</Text>
+                <Text style={styles.body}>{t('onboarding.proBody')}</Text>
+                <View style={{ gap: spacing.md }}>
+                  <Feature icon="sparkles-outline"   title={t('upgrade.benefits.coach.title')}   body={t('upgrade.benefits.coach.body')} />
+                  <Feature icon="leaf-outline"       title={t('upgrade.benefits.rituals.title')} body={t('upgrade.benefits.rituals.body')} />
+                  <Feature icon="analytics-outline"  title={t('upgrade.benefits.insights.title')} body={t('upgrade.benefits.insights.body')} />
+                </View>
+                <Pressable style={styles.cta} onPress={() => finish(true)}>
+                  <Text style={styles.ctaText}>{t('upgrade.startCta')}</Text>
+                  <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
+                </Pressable>
+                <Pressable onPress={() => finish()}>
+                  <Text style={styles.skip}>{t('onboarding.proSkip')}</Text>
                 </Pressable>
               </>
             )}

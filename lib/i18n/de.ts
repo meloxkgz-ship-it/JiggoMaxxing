@@ -515,5 +515,8 @@ export default {
     notifyBody: 'Aktiviere eine einzige tägliche Erinnerung. Nur lokal — kein Push-Server, niemals.',
     notifyEnable: 'Erinnerung aktivieren',
     notifyLater: 'Vielleicht später',
+    proTitle: 'JIGGO Pro 14 Tage\nkostenlos testen.',
+    proBody: 'Die kostenlose Version ist schon stark. Pro nimmt den Deckel ab — voller Coach, volle Ritual-Bibliothek, Langzeit-Insights. Gleiche privaten Regeln.',
+    proSkip: 'Ohne Pro weitermachen',
   },
 };

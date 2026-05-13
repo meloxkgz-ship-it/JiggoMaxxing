@@ -515,5 +515,8 @@ export default {
     notifyBody: 'Enable a single daily reminder. Stored only on this device — no push server, ever.',
     notifyEnable: 'Enable reminder',
     notifyLater: 'Maybe later',
+    proTitle: 'Try JIGGO Pro\nfree for 14 days.',
+    proBody: 'The free build is already strong. Pro takes the lid off the coach, the ritual library, and long-form insights. Same private rules.',
+    proSkip: 'Continue without Pro',
   },
 };
