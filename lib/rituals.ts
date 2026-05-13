@@ -291,7 +291,14 @@ export function getRitualForNow(lang: Lang): Ritual {
   const d = new Date();
   const hour = d.getHours();
   const ctx: RitualContext = hour < 11 ? 'morning' : hour < 18 ? 'reset' : 'evening';
-  const pool = listRituals(lang).filter((r) => r.context === ctx);
+  const all = listRituals(lang);
+  const pool = all.filter((r) => r.context === ctx);
+  // Fallback: if a context ever has zero entries (future content edit),
+  // hand back the first ritual of any context instead of a `pool[NaN]`
+  // undefined that would red-screen the Home card.
+  if (pool.length === 0) {
+    return all[0];
+  }
   const day = Math.floor(
     (d.getTime() - new Date(d.getFullYear(), 0, 0).getTime() - d.getTimezoneOffset() * 60_000) / 86_400_000,
   );

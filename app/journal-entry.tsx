@@ -124,7 +124,7 @@ export default function JournalEntryScreen() {
                       Haptics.selectionAsync().catch(() => {});
                       setMood(mood === m.v ? undefined : m.v);
                     }}
-                    accessibilityRole="radio"
+                    accessibilityRole="button"
                     accessibilityLabel={t(`journal.moods.${m.v}`)}
                     accessibilityState={{ selected: mood === m.v }}
                     style={[styles.moodChip, mood === m.v && styles.moodChipActive]}>
@@ -144,11 +144,10 @@ export default function JournalEntryScreen() {
                   <Pressable
                     key={i}
                     onPress={() => {
-                      // Append the prompt to the notes if it isn't already there.
-                      const line = `${p} `;
-                      if (!notes.endsWith(line)) {
-                        setNotes(notes ? `${notes.trim()}\n\n${p} ` : `${p} `);
-                      }
+                      // Skip if this prompt is already anywhere in the notes —
+                      // endsWith() failed once a second prompt was tapped.
+                      if (notes.includes(p)) return;
+                      setNotes(notes ? `${notes.trim()}\n\n${p} ` : `${p} `);
                     }}
                     style={styles.promptRow}>
                     <View style={styles.promptDot} />

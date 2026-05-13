@@ -150,6 +150,7 @@ export default {
     duration: 'Dauer',
     category: 'Kategorie',
     addCustom: 'Eigenes Item hinzufügen',
+    editDeleteHint: 'Lang drücken zum Bearbeiten oder Löschen',
     insights: {
       skinUp: 'Hautwerte steigen Woche für Woche',
       sleepStable: 'Durchschnittsschlaf stabil über 7 h',
@@ -349,6 +350,7 @@ export default {
       recovery: { title: 'Recovery zuerst', body: 'Wenn die Arbeit nicht wirkt, ist die Pause die Antwort.' },
       purpose: { title: 'Ein größeres Warum', body: 'Rahme das nächste Quartal um das, was wirklich zählt.' },
     },
+    sendA11y: 'Nachricht an Coach senden',
     error: 'Coach nicht erreichbar. Prüf Netzwerk oder API-Key.',
     copied: 'Kopiert',
     regenerate: 'Neu generieren',

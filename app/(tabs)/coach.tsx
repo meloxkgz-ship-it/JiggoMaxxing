@@ -437,7 +437,7 @@ export default function CoachScreen() {
           <Pressable
             onPress={() => send(input)}
             accessibilityRole="button"
-            accessibilityLabel="Send message to coach"
+            accessibilityLabel={t('coach.sendA11y')}
             style={[styles.sendBtn, !input.trim() && styles.sendBtnDisabled]}
             disabled={!input.trim() || busy}>
             <Ionicons name="arrow-up" size={18} color={colors.textOnBronze} />
@@ -487,7 +487,9 @@ const styles = StyleSheet.create({
   topicsScroll: { padding: spacing.xl, gap: spacing.lg },
   topicsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   topicCard: {
-    flexBasis: '47%', flexGrow: 1,
+    // Fixed two-column width — dropping flexGrow keeps the trailing odd
+    // card half-width and left-aligned instead of stretching to full row.
+    flexBasis: '47%',
     padding: spacing.lg,
     borderRadius: radius.lg,
     backgroundColor: colors.surfaceElevated,

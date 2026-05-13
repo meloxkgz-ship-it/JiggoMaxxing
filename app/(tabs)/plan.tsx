@@ -226,7 +226,7 @@ export default function PlanScreen() {
                   accessibilityRole="checkbox"
                   accessibilityLabel={`${it.time} · ${it.title}`}
                   accessibilityState={{ checked: done }}
-                  accessibilityHint={isCustom ? 'Long press to edit or delete' : undefined}
+                  accessibilityHint={isCustom ? t('plan.editDeleteHint') : undefined}
                   onLongPress={
                     isCustom
                       ? () =>

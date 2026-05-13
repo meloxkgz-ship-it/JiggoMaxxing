@@ -150,6 +150,7 @@ export default {
     duration: 'Duration',
     category: 'Category',
     addCustom: 'Add custom item',
+    editDeleteHint: 'Long press to edit or delete',
     insights: {
       skinUp: 'Skin scores up week-over-week',
       sleepStable: 'Average sleep stable above 7h',
@@ -349,6 +350,7 @@ export default {
       recovery: { title: 'Recovery first', body: 'When the work isn\'t working, the rest is the answer.' },
       purpose: { title: 'A bigger why', body: 'Frame the next quarter around what actually matters.' },
     },
+    sendA11y: 'Send message to coach',
     error: 'Coach unavailable. Check your network or API key.',
     copied: 'Copied',
     regenerate: 'Regenerate',
