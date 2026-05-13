@@ -37,6 +37,11 @@ const QUOTES: Record<Lang, Quote[]> = {
     { text: 'The privilege of a lifetime is to become who you truly are.', author: 'Carl Jung' },
     { text: 'Care about what other people think and you will always be their prisoner.', author: 'Lao Tzu' },
     { text: 'Energy and persistence conquer all things.', author: 'Benjamin Franklin' },
+    { text: 'He who has a why to live can bear almost any how.', author: 'Friedrich Nietzsche' },
+    { text: 'The obstacle is the way.', author: 'Marcus Aurelius' },
+    { text: 'It is during our darkest moments that we must focus to see the light.', author: 'Aristotle' },
+    { text: 'A society grows great when old men plant trees whose shade they know they shall never sit in.', author: 'Greek proverb' },
+    { text: 'Action is the foundational key to all success.', author: 'Pablo Picasso' },
   ],
   de: [
     { text: 'Disziplin ist die Brücke zwischen Zielen und Erfolg.', author: 'Jim Rohn' },
@@ -60,6 +65,11 @@ const QUOTES: Record<Lang, Quote[]> = {
     { text: 'Das Privileg eines Lebens ist, der zu werden, der man wirklich ist.', author: 'C. G. Jung' },
     { text: 'Wer sich um die Meinung anderer sorgt, wird ihr Gefangener bleiben.', author: 'Laozi' },
     { text: 'Energie und Beharrlichkeit besiegen alles.', author: 'Benjamin Franklin' },
+    { text: 'Wer ein Warum zu leben hat, erträgt fast jedes Wie.', author: 'Friedrich Nietzsche' },
+    { text: 'Das Hindernis ist der Weg.', author: 'Mark Aurel' },
+    { text: 'Gerade in den dunkelsten Momenten müssen wir uns konzentrieren, um das Licht zu sehen.', author: 'Aristoteles' },
+    { text: 'Eine Gesellschaft wächst, wenn alte Männer Bäume pflanzen, deren Schatten sie nie kennen werden.', author: 'Griechisches Sprichwort' },
+    { text: 'Handeln ist der Grundstein jedes Erfolgs.', author: 'Pablo Picasso' },
   ],
 };
 
