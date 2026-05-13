@@ -33,7 +33,9 @@ import { PlanItem } from '@/lib/types';
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 
-const TEMPLATES: PlanTemplate[] = ['foundations', 'disciplined', 'lean', 'travel', 'recovery', 'cut'];
+// Derive the chip list from PLAN_TEMPLATES so adding a new built-in
+// template can't leave the picker out of sync again.
+const TEMPLATES = Object.keys(PLAN_TEMPLATES) as PlanTemplate[];
 
 export default function PlanScreen() {
   const t = useT();
