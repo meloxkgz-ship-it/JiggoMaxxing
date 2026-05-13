@@ -78,6 +78,26 @@ export default function RitualsScreen() {
           );
         })}
 
+        {/* Soft Pro CTA — sits below the curated free library. Editorial
+            framing: the free set is real; Pro adds a fresh monthly drop.
+            One tap → /upgrade. */}
+        <Pressable
+          style={styles.proCta}
+          onPress={() => router.push('/upgrade' as any)}
+          accessibilityRole="button"
+          accessibilityLabel={t('rituals.proCtaButton')}>
+          <View style={styles.proCtaIcon}>
+            <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.proCtaTitle}>{t('rituals.proCtaTitle')}</Text>
+            <Text style={styles.proCtaBody}>{t('rituals.proCtaBody')}</Text>
+          </View>
+          <View style={styles.proCtaButton}>
+            <Text style={styles.proCtaButtonText}>{t('rituals.proCtaButton')}</Text>
+          </View>
+        </Pressable>
+
         <Text style={styles.fine}>{t('rituals.fine')}</Text>
         <View style={{ height: 60 }} />
       </ScrollView>
@@ -179,5 +199,32 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontStyle: 'italic',
     marginTop: spacing.md,
+  },
+
+  proCta: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(176,138,90,0.10)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.35)',
+  },
+  proCtaIcon: {
+    width: 32, height: 32, borderRadius: 10,
+    backgroundColor: colors.bronze,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  proCtaTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13.5 },
+  proCtaBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12, lineHeight: 17, marginTop: 2 },
+  proCtaButton: {
+    paddingHorizontal: 10, paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bronze,
+  },
+  proCtaButtonText: {
+    color: colors.textOnBronze,
+    fontFamily: type.family.sansSemi,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
   },
 });

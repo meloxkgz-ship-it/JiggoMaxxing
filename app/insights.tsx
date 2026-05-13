@@ -261,6 +261,25 @@ export default function InsightsScreen() {
           </View>
         )}
 
+        {/* Soft Pro CTA — appears after all the free signals. Same shape as
+            the rituals upsell so the brand reads consistent. */}
+        <Pressable
+          style={styles.proCta}
+          onPress={() => router.push('/upgrade' as any)}
+          accessibilityRole="button"
+          accessibilityLabel={t('home.insightsProButton')}>
+          <View style={styles.proCtaIcon}>
+            <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.proCtaTitle}>{t('home.insightsProTitle')}</Text>
+            <Text style={styles.proCtaBody}>{t('home.insightsProBody')}</Text>
+          </View>
+          <View style={styles.proCtaBtn}>
+            <Text style={styles.proCtaBtnText}>{t('home.insightsProButton')}</Text>
+          </View>
+        </Pressable>
+
         <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
@@ -392,6 +411,33 @@ const styles = StyleSheet.create({
   moodValue: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 20, letterSpacing: type.letterSpacing.tight, marginTop: 4 },
   moodRibbon: { flexDirection: 'row', gap: 3, marginTop: spacing.md, height: 8 },
   moodRibbonCell: { flex: 1, borderRadius: 2 },
+
+  proCta: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(176,138,90,0.10)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.35)',
+  },
+  proCtaIcon: {
+    width: 32, height: 32, borderRadius: 10,
+    backgroundColor: colors.bronze,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  proCtaTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 13.5 },
+  proCtaBody: { color: colors.textSecondary, fontFamily: type.family.sans, fontSize: 12, lineHeight: 17, marginTop: 2 },
+  proCtaBtn: {
+    paddingHorizontal: 10, paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bronze,
+  },
+  proCtaBtnText: {
+    color: colors.textOnBronze,
+    fontFamily: type.family.sansSemi,
+    fontSize: 10.5,
+    letterSpacing: 0.3,
+  },
 
   scanDetail: {
     marginTop: spacing.md, paddingTop: spacing.md,
