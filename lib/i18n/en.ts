@@ -404,6 +404,21 @@ export default {
     comingSoonBody: 'JIGGO Pro is in final polish. Open Settings to use the app with your own Anthropic key in the meantime — full coach, zero subscription.',
     unlockSettings: 'Unlock JIGGO Pro',
     unlockSettingsSub: '14-day trial · cancel anytime',
+    faqTitle: 'Honest answers',
+    faq: [
+      {
+        q: 'What if I cancel?',
+        a: 'You keep the app. Free is the real product; Pro is depth on top. Cancel in iOS Subscriptions and JIGGO stays installed — your data never moves.',
+      },
+      {
+        q: 'Is anything I send tracked?',
+        a: 'No accounts. No analytics. No ad ids. Coach turns are sent to Anthropic to generate replies and to nowhere else. Everything else stays on this device.',
+      },
+      {
+        q: 'I already have an Anthropic key — do I need Pro?',
+        a: 'No. Use Settings → Coach to paste your key. JIGGO is fully usable that way. Pro removes the BYO-key step and adds the deeper ritual + insights libraries.',
+      },
+    ],
   },
   rituals: {
     title: 'Rituals',

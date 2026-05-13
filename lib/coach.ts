@@ -254,6 +254,39 @@ export async function saveHistory(turns: CoachTurn[]): Promise<void> {
   await setJSON(KEY, capped);
 }
 
+/**
+ * Verify an Anthropic API key with a 1-token roundtrip. Used by Settings
+ * to confirm a paste actually works before persisting it — without this a
+ * typo silently saves and the user sees "Coach unavailable" later with no
+ * obvious cause.
+ *
+ * Returns null on success or a short error message on failure.
+ */
+export async function verifyApiKey(key: string): Promise<string | null> {
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key.trim(),
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1,
+        messages: [{ role: 'user', content: 'hi' }],
+      }),
+    });
+    if (res.ok) return null;
+    if (res.status === 401 || res.status === 403) return 'Key rejected. Check the value and try again.';
+    if (res.status === 429) return 'Rate limit hit. Wait a moment and retry.';
+    return `Anthropic API ${res.status}.`;
+  } catch (e: any) {
+    return `Network error: ${e?.message ?? 'unknown'}.`;
+  }
+}
+
 export const COACH_SUGGESTIONS = [
   'Build me a 4‑week skin reset',
   'My posture collapses by 3pm. Fix.',

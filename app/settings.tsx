@@ -17,7 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { clearHistory } from '@/lib/coach';
+import { clearHistory, verifyApiKey } from '@/lib/coach';
 import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
 import {
   cancelNudgeNotification,
@@ -92,10 +92,21 @@ export default function SettingsScreen() {
   };
 
   const saveKey = async () => {
+    const trimmed = keyDraft.trim();
     setKeyStatus('saving');
+    // If the user is *clearing* the key, skip the network verification —
+    // there's nothing to test. Only verify on save-of-a-non-empty key.
+    if (trimmed) {
+      const err = await verifyApiKey(trimmed);
+      if (err) {
+        setKeyStatus('idle');
+        Alert.alert(t('settings.coach'), err);
+        return;
+      }
+    }
     try {
-      await setApiKey(keyDraft.trim() || null);
-      setHasKey(!!keyDraft.trim());
+      await setApiKey(trimmed || null);
+      setHasKey(!!trimmed);
       setKeyStatus('saved');
       setTimeout(() => setKeyStatus('idle'), 1200);
     } catch (e: any) {

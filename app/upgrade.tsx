@@ -21,7 +21,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { useT } from '@/lib/i18n';
+import { useLanguage, useT } from '@/lib/i18n';
+import en from '@/lib/i18n/en';
+import de from '@/lib/i18n/de';
 
 type Tier = 'weekly' | 'yearly' | 'lifetime';
 
@@ -37,7 +39,10 @@ const BENEFIT_ICONS: Record<typeof BENEFIT_KEYS[number], keyof typeof Ionicons.g
 
 export default function UpgradeScreen() {
   const t = useT();
+  const { lang } = useLanguage();
   const [tier, setTier] = useState<Tier>('yearly');
+  const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const faq: { q: string; a: string }[] = ((lang === 'de' ? de : en) as any).upgrade.faq ?? [];
 
   const start = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -136,6 +141,37 @@ export default function UpgradeScreen() {
           <Ionicons name="key-outline" size={12} color={colors.textTertiary} />
           <Text style={styles.byoText}>{t('upgrade.byoLink')}</Text>
         </Pressable>
+
+        {/* FAQ accordion — addresses the three highest-friction questions
+            users have about subscriptions, in editorial voice. Tapping a
+            row expands the answer; only one can be open at a time. */}
+        {faq.length > 0 && (
+          <View style={styles.faqWrap}>
+            <Eyebrow>{t('upgrade.faqTitle')}</Eyebrow>
+            {faq.map((item, i) => {
+              const open = expandedFaq === i;
+              return (
+                <Pressable
+                  key={i}
+                  style={[styles.faqRow, open && styles.faqRowOpen]}
+                  onPress={() => setExpandedFaq(open ? null : i)}
+                  accessibilityRole="button"
+                  accessibilityLabel={item.q}
+                  accessibilityState={{ expanded: open }}>
+                  <View style={styles.faqQ}>
+                    <Text style={styles.faqQText}>{item.q}</Text>
+                    <Ionicons
+                      name={open ? 'remove' : 'add'}
+                      size={16}
+                      color={colors.bronze}
+                    />
+                  </View>
+                  {open && <Text style={styles.faqA}>{item.a}</Text>}
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
 
         <View style={{ height: 80 }} />
       </ScrollView>
@@ -299,4 +335,23 @@ const styles = StyleSheet.create({
   },
   byoLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   byoText: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 11.5, letterSpacing: 0.2 },
+
+  faqWrap: { gap: spacing.sm, marginTop: spacing.xl },
+  faqRow: {
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.hairline,
+  },
+  faqRowOpen: { borderColor: 'rgba(176,138,90,0.35)', backgroundColor: 'rgba(176,138,90,0.05)' },
+  faqQ: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  faqQText: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14, flex: 1, paddingRight: spacing.md },
+  faqA: {
+    color: colors.textSecondary,
+    fontFamily: type.family.sans,
+    fontSize: 13,
+    lineHeight: 19.5,
+    marginTop: spacing.md,
+  },
 });
