@@ -95,6 +95,13 @@ export default function ScanDetailScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}
           style={styles.hero}>
+          {/* Date eyebrow — anchors the reading in time at a glance, dossier
+              feel without a label proper. */}
+          <Text style={styles.heroDate}>
+            {new Date(scan.createdAt).toLocaleDateString(undefined, {
+              weekday: 'long', month: 'long', day: 'numeric',
+            }).toUpperCase()}
+          </Text>
           <View style={styles.frame}>
             {scan.photoUri ? (
               <Image source={{ uri: scan.photoUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
@@ -110,6 +117,32 @@ export default function ScanDetailScreen() {
           <View style={styles.scoreRow}>
             <Text style={styles.score}>{scan.overall}</Text>
             <Text style={styles.scoreUnit}>/100</Text>
+            {(() => {
+              // allScans is sorted desc; the scan after this one in the
+              // array is the one immediately before it in time.
+              const idx = allScans.findIndex((s) => s.id === scan.id);
+              const prev = idx >= 0 && idx + 1 < allScans.length ? allScans[idx + 1] : null;
+              if (!prev || prev.overall === scan.overall) return null;
+              const delta = scan.overall - prev.overall;
+              const up = delta > 0;
+              return (
+                <View
+                  style={[
+                    styles.scoreDelta,
+                    up ? styles.scoreDeltaUp : styles.scoreDeltaDown,
+                  ]}>
+                  <Ionicons
+                    name={up ? 'arrow-up' : 'arrow-down'}
+                    size={12}
+                    color={up ? colors.positive : colors.danger}
+                  />
+                  <Text style={[
+                    styles.scoreDeltaText,
+                    { color: up ? colors.positive : colors.danger },
+                  ]}>{Math.abs(delta)}</Text>
+                </View>
+              );
+            })()}
           </View>
           <Text style={styles.scoreLabel}>{t('scan.overall')}</Text>
         </LinearGradient>
@@ -209,7 +242,25 @@ const styles = StyleSheet.create({
   cornerBL: { bottom: 8, left: 8, borderLeftWidth: 2, borderBottomWidth: 2 },
   cornerBR: { bottom: 8, right: 8, borderRightWidth: 2, borderBottomWidth: 2 },
 
+  heroDate: {
+    color: colors.bronze,
+    fontFamily: type.family.sansBlack,
+    fontSize: 10.5,
+    letterSpacing: 0.7,
+    marginBottom: 4,
+  },
   scoreRow: { flexDirection: 'row', alignItems: 'flex-end' },
+  scoreDelta: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    marginLeft: 'auto',
+    marginBottom: 18,
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  scoreDeltaUp:   { borderColor: 'rgba(126,158,122,0.40)', backgroundColor: 'rgba(126,158,122,0.10)' },
+  scoreDeltaDown: { borderColor: 'rgba(176,88,79,0.40)', backgroundColor: 'rgba(176,88,79,0.10)' },
+  scoreDeltaText: { fontFamily: type.family.sansBlack, fontSize: 11, letterSpacing: 0.4 },
   score: { color: colors.textPrimary, fontFamily: type.family.sansBlack, fontSize: 88, lineHeight: 88, letterSpacing: type.letterSpacing.tighter },
   scoreUnit: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 16, marginBottom: 14, marginLeft: 4 },
   scoreLabel: { color: colors.textSecondary, fontFamily: type.family.sansMedium, fontSize: 12, letterSpacing: 0.6, textTransform: 'uppercase' },
