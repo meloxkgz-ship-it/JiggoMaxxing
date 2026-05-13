@@ -10,7 +10,8 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useT } from '@/lib/i18n';
-import { dateKey, todayKey } from '@/lib/journal';
+import { lastNDates } from '@/lib/dates';
+import { todayKey } from '@/lib/journal';
 import {
   ActiveTemplateId,
   deleteCustomItem,
@@ -31,15 +32,6 @@ import { PlanItem } from '@/lib/types';
 
 const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-function lastNDates(n: number): string[] {
-  const out: string[] = [];
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    out.push(dateKey(d));
-  }
-  return out;
-}
 
 const TEMPLATES: PlanTemplate[] = ['foundations', 'disciplined', 'lean', 'travel', 'recovery', 'cut'];
 

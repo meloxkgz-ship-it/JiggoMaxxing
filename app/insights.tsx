@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useT } from '@/lib/i18n';
-import { dateKey, getStreak, listEntries, todayKey } from '@/lib/journal';
+import { lastNDates } from '@/lib/dates';
+import { getStreak, listEntries, todayKey } from '@/lib/journal';
 import { getActivePlan, getCompletion } from '@/lib/plan';
 import { getNudgeStreak } from '@/lib/nudge';
 import { listScans } from '@/lib/scan';
@@ -26,15 +27,6 @@ const MOOD_COLORS: Record<string, string> = {
   restless:  '#7A6E92',
 };
 
-function lastNDates(n: number): string[] {
-  const out: string[] = [];
-  for (let i = n - 1; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    out.push(dateKey(d));
-  }
-  return out;
-}
 
 export default function InsightsScreen() {
   const t = useT();

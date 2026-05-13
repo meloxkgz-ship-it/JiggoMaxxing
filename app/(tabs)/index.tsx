@@ -37,6 +37,7 @@ import {
   setNudgeDone,
 } from '@/lib/nudge';
 import { Alert } from 'react-native';
+import { computeWeeklyRecap, isSunday, WeeklyRecap } from '@/lib/recap';
 import { getRitualForNow } from '@/lib/rituals';
 import { listScans } from '@/lib/scan';
 import { getSettings } from '@/lib/settings';
@@ -69,6 +70,9 @@ export default function HomeHubScreen() {
   const [milestone, setMilestone] = useState<number | null>(null);
   const [graceAvail, setGraceAvail] = useState(false);
   const [showPushPrompt, setShowPushPrompt] = useState(false);
+  // Computed only on Sundays via `isSunday()` guard — other days the card
+  // is hidden so we don't pay the AsyncStorage round-trip.
+  const [recap, setRecap] = useState<WeeklyRecap | null>(null);
   // Tracks the queued warm-push timeout so we can cancel on dismiss/unmount
   // and avoid stacking duplicates across rapid focus + pull-to-refresh.
   const pushPromptTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -92,6 +96,13 @@ export default function HomeHubScreen() {
     setSettings(s);
     setScan(sc[0] ?? null);
     setPreviousScanOverall(sc.length >= 2 ? sc[1].overall : null);
+    // Compute the recap only on Sundays — the card is hidden the rest of
+    // the week and the storage round-trip isn't worth paying.
+    if (isSunday()) {
+      setRecap(await computeWeeklyRecap());
+    } else {
+      setRecap(null);
+    }
     setJournal(je);
     setPlan(pp);
     setPlanDone((pc[todayKey()] ?? []).length);
@@ -446,6 +457,63 @@ export default function HomeHubScreen() {
             </View>
           </Card>
         </View>
+
+        {/* Sunday Recap — appears only on Sundays. Editorial summary of
+            what the user *did* over the past 7 days. Framing: never about
+            what was missed; only what landed. */}
+        {recap && (
+          <View style={styles.section}>
+            <View style={styles.sectionHead}>
+              <Eyebrow>{t('home.recapTitle')}</Eyebrow>
+              <Text style={styles.sectionLink}>{t('home.recapSub')}</Text>
+            </View>
+            <View style={styles.recapCard}>
+              <View style={styles.recapRow}>
+                <Ionicons name="calendar-outline" size={14} color={colors.bronze} />
+                <Text style={styles.recapText}>{t('home.recapPlan', { n: recap.planItemsDone })}</Text>
+                <Text style={styles.recapMeta}>{Math.round(recap.planAdherence * 100)}%</Text>
+              </View>
+              <View style={styles.recapRow}>
+                <Ionicons name="book-outline" size={14} color={colors.bronze} />
+                <Text style={styles.recapText}>{t('home.recapJournal', { n: recap.journalDays })}</Text>
+                <Text style={styles.recapMeta}>{recap.journalDays}/7</Text>
+              </View>
+              <View style={styles.recapRow}>
+                <Ionicons name="flame-outline" size={14} color={colors.bronze} />
+                <Text style={styles.recapText}>{t('home.recapNudges', { n: recap.nudgeDays })}</Text>
+                <Text style={styles.recapMeta}>{recap.nudgeDays}/7</Text>
+              </View>
+              {recap.topMood && (
+                <View style={styles.recapRow}>
+                  <Ionicons name="pulse-outline" size={14} color={colors.bronze} />
+                  <Text style={styles.recapText}>
+                    {t('home.recapMood', { mood: t(`journal.moods.${recap.topMood}`) })}
+                  </Text>
+                </View>
+              )}
+              {recap.scanDelta !== null && (
+                <View style={styles.recapRow}>
+                  <Ionicons
+                    name={recap.scanDelta > 0 ? 'arrow-up' : recap.scanDelta < 0 ? 'arrow-down' : 'remove-outline'}
+                    size={14}
+                    color={
+                      recap.scanDelta > 0 ? colors.positive
+                      : recap.scanDelta < 0 ? colors.danger
+                      : colors.bronze
+                    }
+                  />
+                  <Text style={styles.recapText}>
+                    {recap.scanDelta > 0
+                      ? t('home.recapScanUp', { n: recap.scanDelta })
+                      : recap.scanDelta < 0
+                        ? t('home.recapScanDown', { n: Math.abs(recap.scanDelta) })
+                        : t('home.recapScanFlat')}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Tomorrow's first move — quiet preview, only when today is wrapped
             OR it's late evening. Forward-rhythm framing: the ritual is already
@@ -957,6 +1025,18 @@ const styles = StyleSheet.create({
   statTileLabel: { color: colors.textTertiary, fontFamily: type.family.sansMedium, fontSize: 10, letterSpacing: 0.5, textTransform: 'uppercase', marginTop: 4 },
 
   quickRow: { flexDirection: 'row', gap: spacing.md },
+
+  recapCard: {
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(176,138,90,0.07)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(176,138,90,0.22)',
+    gap: 12,
+  },
+  recapRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  recapText: { flex: 1, color: colors.textPrimary, fontFamily: type.family.sansMedium, fontSize: 13.5 },
+  recapMeta: { color: colors.bronze, fontFamily: type.family.sansBlack, fontSize: 12, letterSpacing: 0.4 },
 
   ritualCard: {
     padding: spacing.lg,
