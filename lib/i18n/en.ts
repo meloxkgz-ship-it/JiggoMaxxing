@@ -163,6 +163,9 @@ export default {
     category: 'Category',
     addCustom: 'Add custom item',
     editDeleteHint: 'Long press to edit or delete',
+    bucketMorning: 'Morning',
+    bucketAfternoon: 'Afternoon',
+    bucketEvening: 'Evening',
     insights: {
       skinUp: 'Skin scores up week-over-week',
       sleepStable: 'Average sleep stable above 7h',

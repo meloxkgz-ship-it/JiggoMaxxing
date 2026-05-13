@@ -211,9 +211,26 @@ export default function PlanScreen() {
             {items.map((it, i) => {
               const done = doneToday.includes(it.id);
               const isCustom = it.id.startsWith('c_');
+              // Bucket the item by its parsed hour. When the bucket changes
+              // vs. the prior item, render a small group divider so the
+              // day's shape is readable at a glance.
+              const hr = parseInt(it.time.split(':')[0] ?? '0', 10) || 0;
+              const bucket: 'morning' | 'afternoon' | 'evening' =
+                hr < 12 ? 'morning' : hr < 17 ? 'afternoon' : 'evening';
+              const prev = i > 0 ? items[i - 1] : null;
+              const prevHr = prev ? parseInt(prev.time.split(':')[0] ?? '0', 10) || 0 : -1;
+              const prevBucket = prev
+                ? (prevHr < 12 ? 'morning' : prevHr < 17 ? 'afternoon' : 'evening')
+                : null;
+              const showBucket = bucket !== prevBucket;
               return (
+                <View key={it.id}>
+                {showBucket && (
+                  <View style={styles.bucketHead}>
+                    <Text style={styles.bucketText}>{t(`plan.bucket${bucket.charAt(0).toUpperCase() + bucket.slice(1)}`)}</Text>
+                  </View>
+                )}
                 <Pressable
-                  key={it.id}
                   onPress={() => onToggle(it.id)}
                   accessibilityRole="checkbox"
                   accessibilityLabel={`${it.time} · ${it.title}`}
@@ -266,6 +283,7 @@ export default function PlanScreen() {
                     )}
                   </View>
                 </Pressable>
+                </View>
               );
             })}
             <Pressable
@@ -423,6 +441,18 @@ const styles = StyleSheet.create({
 
   row: { flexDirection: 'row', alignItems: 'center', padding: spacing.lg },
   rowDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.hairline },
+  bucketHead: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: 6,
+  },
+  bucketText: {
+    color: colors.bronze,
+    fontFamily: type.family.sansBlack,
+    fontSize: 10.5,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
   rowTime: { color: colors.bronze, fontFamily: type.family.sansSemi, fontSize: 12, letterSpacing: 0.4, width: 44 },
   rowTitle: { color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 15 },
   rowTitleDone: { color: colors.textTertiary, textDecorationLine: 'line-through' },
