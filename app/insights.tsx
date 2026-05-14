@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
+import { PRO_ENABLED } from '@/lib/featureFlags';
 import { useT } from '@/lib/i18n';
 import { lastNDates } from '@/lib/dates';
 import { getStreak, listEntries, todayKey } from '@/lib/journal';
@@ -288,24 +289,26 @@ export default function InsightsScreen() {
           </View>
         )}
 
-        {/* Soft Pro CTA — appears after all the free signals. Same shape as
-            the rituals upsell so the brand reads consistent. */}
-        <Pressable
-          style={styles.proCta}
-          onPress={() => router.push('/upgrade' as any)}
-          accessibilityRole="button"
-          accessibilityLabel={t('home.insightsProButton')}>
-          <View style={styles.proCtaIcon}>
-            <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.proCtaTitle}>{t('home.insightsProTitle')}</Text>
-            <Text style={styles.proCtaBody}>{t('home.insightsProBody')}</Text>
-          </View>
-          <View style={styles.proCtaBtn}>
-            <Text style={styles.proCtaBtnText}>{t('home.insightsProButton')}</Text>
-          </View>
-        </Pressable>
+        {/* Soft Pro CTA — gated behind PRO_ENABLED. Hidden for the v1.0
+            BYO-key-only submit. */}
+        {PRO_ENABLED && (
+          <Pressable
+            style={styles.proCta}
+            onPress={() => router.push('/upgrade' as any)}
+            accessibilityRole="button"
+            accessibilityLabel={t('home.insightsProButton')}>
+            <View style={styles.proCtaIcon}>
+              <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.proCtaTitle}>{t('home.insightsProTitle')}</Text>
+              <Text style={styles.proCtaBody}>{t('home.insightsProBody')}</Text>
+            </View>
+            <View style={styles.proCtaBtn}>
+              <Text style={styles.proCtaBtnText}>{t('home.insightsProButton')}</Text>
+            </View>
+          </Pressable>
+        )}
 
         <View style={{ height: 60 }} />
       </ScrollView>

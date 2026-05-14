@@ -18,12 +18,18 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
+import { PRO_ENABLED } from '@/lib/featureFlags';
 import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
 import { seedStarterPlanFromGoals } from '@/lib/plan';
 import { saveSettings } from '@/lib/settings';
 
-const STEPS = ['intro', 'pact', 'goals', 'experience', 'tour', 'profile', 'pro'] as const;
-type Step = typeof STEPS[number];
+type Step = 'intro' | 'pact' | 'goals' | 'experience' | 'tour' | 'profile' | 'pro';
+
+// The 'pro' step only exists when Pro is enabled — for the v1.0
+// BYO-key-only submit the flow ends at 'profile'.
+const STEPS: Step[] = PRO_ENABLED
+  ? ['intro', 'pact', 'goals', 'experience', 'tour', 'profile', 'pro']
+  : ['intro', 'pact', 'goals', 'experience', 'tour', 'profile'];
 
 const GOALS: { v: 'grooming' | 'physique' | 'style' | 'confidence' | 'discipline'; icon: any }[] = [
   { v: 'grooming',   icon: 'water-outline' },
@@ -284,8 +290,13 @@ export default function OnboardingScreen() {
                     placeholderTextColor={colors.textTertiary}
                   />
                 </View>
-                <Pressable style={styles.cta} onPress={next}>
-                  <Text style={styles.ctaText}>{t('common.continue')}</Text>
+                {/* With Pro enabled, continue advances to the 'pro' step;
+                    without it, 'profile' is the last step so continue
+                    finishes onboarding directly. */}
+                <Pressable style={styles.cta} onPress={PRO_ENABLED ? next : () => finish()}>
+                  <Text style={styles.ctaText}>
+                    {PRO_ENABLED ? t('common.continue') : t('onboarding.enter')}
+                  </Text>
                   <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
                 </Pressable>
                 <Pressable onPress={() => finish()}>

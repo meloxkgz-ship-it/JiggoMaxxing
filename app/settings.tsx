@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { clearHistory, verifyApiKey } from '@/lib/coach';
+import { PRO_ENABLED } from '@/lib/featureFlags';
 import { LANGUAGES, useLanguage, useT } from '@/lib/i18n';
 import {
   cancelNudgeNotification,
@@ -258,22 +259,24 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title={t('settings.coach')} subtitle={t('settings.coachSub')}>
-          {/* JIGGO Pro upsell — sits above the BYO-key field so the upgrade
-              path is visible without making BYO feel second-class. */}
-          <Pressable
-            style={styles.proRow}
-            onPress={() => router.push('/upgrade' as any)}
-            accessibilityRole="button"
-            accessibilityLabel={t('upgrade.unlockSettings')}>
-            <View style={styles.proGlyph}>
-              <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.proTitle}>{t('upgrade.unlockSettings')}</Text>
-              <Text style={styles.proSub}>{t('upgrade.unlockSettingsSub')}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.bronze} />
-          </Pressable>
+          {/* JIGGO Pro upsell — gated behind PRO_ENABLED. Hidden for the
+              v1.0 BYO-key-only submit; lights up once StoreKit is wired. */}
+          {PRO_ENABLED && (
+            <Pressable
+              style={styles.proRow}
+              onPress={() => router.push('/upgrade' as any)}
+              accessibilityRole="button"
+              accessibilityLabel={t('upgrade.unlockSettings')}>
+              <View style={styles.proGlyph}>
+                <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.proTitle}>{t('upgrade.unlockSettings')}</Text>
+                <Text style={styles.proSub}>{t('upgrade.unlockSettingsSub')}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.bronze} />
+            </Pressable>
+          )}
 
           <View style={styles.keyRow}>
             <TextInput

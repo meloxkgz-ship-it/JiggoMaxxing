@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
+import { PRO_ENABLED } from '@/lib/featureFlags';
 import { useLanguage, useT } from '@/lib/i18n';
 import { listRituals, RitualContext } from '@/lib/rituals';
 
@@ -78,25 +79,26 @@ export default function RitualsScreen() {
           );
         })}
 
-        {/* Soft Pro CTA — sits below the curated free library. Editorial
-            framing: the free set is real; Pro adds a fresh monthly drop.
-            One tap → /upgrade. */}
-        <Pressable
-          style={styles.proCta}
-          onPress={() => router.push('/upgrade' as any)}
-          accessibilityRole="button"
-          accessibilityLabel={t('rituals.proCtaButton')}>
-          <View style={styles.proCtaIcon}>
-            <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.proCtaTitle}>{t('rituals.proCtaTitle')}</Text>
-            <Text style={styles.proCtaBody}>{t('rituals.proCtaBody')}</Text>
-          </View>
-          <View style={styles.proCtaButton}>
-            <Text style={styles.proCtaButtonText}>{t('rituals.proCtaButton')}</Text>
-          </View>
-        </Pressable>
+        {/* Soft Pro CTA — gated behind PRO_ENABLED. Hidden for the v1.0
+            BYO-key-only submit; the full ritual library above is free. */}
+        {PRO_ENABLED && (
+          <Pressable
+            style={styles.proCta}
+            onPress={() => router.push('/upgrade' as any)}
+            accessibilityRole="button"
+            accessibilityLabel={t('rituals.proCtaButton')}>
+            <View style={styles.proCtaIcon}>
+              <Ionicons name="sparkles" size={14} color={colors.textOnBronze} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.proCtaTitle}>{t('rituals.proCtaTitle')}</Text>
+              <Text style={styles.proCtaBody}>{t('rituals.proCtaBody')}</Text>
+            </View>
+            <View style={styles.proCtaButton}>
+              <Text style={styles.proCtaButtonText}>{t('rituals.proCtaButton')}</Text>
+            </View>
+          </Pressable>
+        )}
 
         <Text style={styles.fine}>{t('rituals.fine')}</Text>
         <View style={{ height: 60 }} />

@@ -27,6 +27,7 @@ import {
   sendToCoach,
   streamToCoach,
 } from '@/lib/coach';
+import { PRO_ENABLED } from '@/lib/featureFlags';
 import { useLanguage, useT } from '@/lib/i18n';
 import { getDailyQuote } from '@/lib/quotes';
 import { getApiKey } from '@/lib/settings';
@@ -466,15 +467,25 @@ function CoachLocked({ t }: { t: (k: string, vars?: any) => string }) {
         <Eyebrow>{t('coach.title')}</Eyebrow>
         <Text style={styles.lockedTitle}>{t('coach.lockedTitle')}</Text>
         <Text style={styles.lockedBody}>{t('coach.lockedBody')}</Text>
-        {/* Primary path: Pro unlock. Secondary: BYO key for power users. */}
-        <Pressable style={styles.lockedCta} onPress={() => router.push('/upgrade' as any)}>
-          <Ionicons name="sparkles" size={16} color={colors.textOnBronze} />
-          <Text style={styles.lockedCtaText}>{t('upgrade.unlockSettings')}</Text>
-        </Pressable>
-        <Pressable style={styles.lockedSecondary} onPress={() => router.push('/settings' as any)}>
-          <Ionicons name="key-outline" size={14} color={colors.bronze} />
-          <Text style={styles.lockedSecondaryText}>{t('coach.openSettings')}</Text>
-        </Pressable>
+        {PRO_ENABLED ? (
+          <>
+            {/* Pro path primary, BYO key secondary. */}
+            <Pressable style={styles.lockedCta} onPress={() => router.push('/upgrade' as any)}>
+              <Ionicons name="sparkles" size={16} color={colors.textOnBronze} />
+              <Text style={styles.lockedCtaText}>{t('upgrade.unlockSettings')}</Text>
+            </Pressable>
+            <Pressable style={styles.lockedSecondary} onPress={() => router.push('/settings' as any)}>
+              <Ionicons name="key-outline" size={14} color={colors.bronze} />
+              <Text style={styles.lockedSecondaryText}>{t('coach.openSettings')}</Text>
+            </Pressable>
+          </>
+        ) : (
+          /* v1.0 BYO-key-only: the API-key path is the single primary CTA. */
+          <Pressable style={styles.lockedCta} onPress={() => router.push('/settings' as any)}>
+            <Ionicons name="key-outline" size={16} color={colors.textOnBronze} />
+            <Text style={styles.lockedCtaText}>{t('coach.openSettings')}</Text>
+          </Pressable>
+        )}
         <Text style={styles.fine}>{t('coach.fine')}</Text>
       </ScrollView>
     </SafeAreaView>
