@@ -45,3 +45,6 @@ app-example
 # Local design refs
 .design/
 
+
+# asc CLI tooling output
+.asc/

@@ -20,6 +20,7 @@ import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useLanguage, useT } from '@/lib/i18n';
+import { formatDate } from '@/lib/dates';
 import { persistPhoto } from '@/lib/photoStore';
 import { computeScan, listScans, saveScan } from '@/lib/scan';
 import en from '@/lib/i18n/en';
@@ -205,7 +206,7 @@ export default function ScanScreen() {
                     )}
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.histDate}>{new Date(s.createdAt).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
+                    <Text style={styles.histDate}>{formatDate(s.createdAt, lang, { weekday: 'short', month: 'short', day: 'numeric' })}</Text>
                     <Text style={styles.histInsight} numberOfLines={1}>{s.insight}</Text>
                   </View>
                   <Text style={styles.histScore}>{s.overall}</Text>

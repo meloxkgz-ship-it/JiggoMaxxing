@@ -8,8 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { PRO_ENABLED } from '@/lib/featureFlags';
-import { useT } from '@/lib/i18n';
-import { lastNDates } from '@/lib/dates';
+import { useLanguage, useT } from '@/lib/i18n';
+import { lastNDates, localeTag } from '@/lib/dates';
 import { getStreak, listEntries, todayKey } from '@/lib/journal';
 import { getActivePlan, getCompletion } from '@/lib/plan';
 import { getNudgeStreak } from '@/lib/nudge';
@@ -31,6 +31,7 @@ const MOOD_COLORS: Record<string, string> = {
 
 export default function InsightsScreen() {
   const t = useT();
+  const { lang } = useLanguage();
   const [scans, setScans] = useState<ScanResult[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [nudgeStreak, setNudgeStreak] = useState(0);
@@ -198,6 +199,7 @@ export default function InsightsScreen() {
                     } as any)
                   }
                   t={t}
+                  lang={lang}
                 />
               )}
             </>
@@ -320,12 +322,14 @@ function ScanDetail({
   scan,
   onOpen,
   t,
+  lang,
 }: {
   scan: ScanResult;
   onOpen: () => void;
   t: (k: string, vars?: any) => string;
+  lang: 'en' | 'de';
 }) {
-  const date = new Date(scan.createdAt).toLocaleString(undefined, {
+  const date = new Date(scan.createdAt).toLocaleString(localeTag(lang), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

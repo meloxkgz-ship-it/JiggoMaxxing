@@ -144,7 +144,7 @@ export default function PlanItemAddScreen() {
                   key={c}
                   onPress={() => { Haptics.selectionAsync().catch(() => {}); setCategory(c); }}
                   style={[styles.chip, category === c && styles.chipActive]}>
-                  <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{c}</Text>
+                  <Text style={[styles.chipText, category === c && styles.chipTextActive]}>{t(`plan.cat.${c}`)}</Text>
                 </Pressable>
               ))}
             </View>

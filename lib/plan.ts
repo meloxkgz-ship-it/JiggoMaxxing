@@ -7,86 +7,98 @@ const TEMPLATE_KEY = 'plan.template';
 
 export type PlanTemplate = 'foundations' | 'disciplined' | 'lean' | 'travel' | 'recovery' | 'cut' | 'sundayReset' | 'focus' | 'stoic';
 
+// Item `title` holds an i18n key (`plan.items.<id>`), resolved at render via
+// `planItemTitle()`. User- and custom-added items keep free-text titles —
+// the resolver passes anything without the `plan.items.` prefix through as-is.
 export const PLAN_TEMPLATES: Record<PlanTemplate, PlanItem[]> = {
   foundations: [
-    { id: 'f1', time: '07:00', title: 'Cold rinse',         category: 'Grooming', duration: '2m'  },
-    { id: 'f2', time: '07:30', title: 'Skin: AM routine',   category: 'Grooming', duration: '4m'  },
-    { id: 'f3', time: '12:30', title: 'Walk · 4k steps',    category: 'Physique', duration: '35m' },
-    { id: 'f4', time: '18:00', title: 'Push session',       category: 'Physique', duration: '45m' },
-    { id: 'f5', time: '21:00', title: 'Skin: PM + retinol', category: 'Grooming', duration: '6m'  },
+    { id: 'f1', time: '07:00', title: 'plan.items.f1', category: 'Grooming', duration: '2m'  },
+    { id: 'f2', time: '07:30', title: 'plan.items.f2', category: 'Grooming', duration: '4m'  },
+    { id: 'f3', time: '12:30', title: 'plan.items.f3', category: 'Physique', duration: '35m' },
+    { id: 'f4', time: '18:00', title: 'plan.items.f4', category: 'Physique', duration: '45m' },
+    { id: 'f5', time: '21:00', title: 'plan.items.f5', category: 'Grooming', duration: '6m'  },
   ],
   disciplined: [
-    { id: 'd1', time: '06:30', title: 'Cold shower 30s',     category: 'Grooming', duration: '5m'  },
-    { id: 'd2', time: '07:00', title: 'AM skin + SPF',       category: 'Grooming', duration: '6m'  },
-    { id: 'd3', time: '12:30', title: 'Walk · 5k steps',     category: 'Physique', duration: '40m' },
-    { id: 'd4', time: '18:00', title: 'Compound lifts',      category: 'Physique', duration: '60m' },
-    { id: 'd5', time: '20:00', title: 'Posture reset',       category: 'Physique', duration: '5m'  },
-    { id: 'd6', time: '21:00', title: 'PM skin + retinol',   category: 'Grooming', duration: '8m'  },
-    { id: 'd7', time: '21:30', title: 'Style: lay out fit',  category: 'Style',    duration: '4m'  },
+    { id: 'd1', time: '06:30', title: 'plan.items.d1', category: 'Grooming', duration: '5m'  },
+    { id: 'd2', time: '07:00', title: 'plan.items.d2', category: 'Grooming', duration: '6m'  },
+    { id: 'd3', time: '12:30', title: 'plan.items.d3', category: 'Physique', duration: '40m' },
+    { id: 'd4', time: '18:00', title: 'plan.items.d4', category: 'Physique', duration: '60m' },
+    { id: 'd5', time: '20:00', title: 'plan.items.d5', category: 'Physique', duration: '5m'  },
+    { id: 'd6', time: '21:00', title: 'plan.items.d6', category: 'Grooming', duration: '8m'  },
+    { id: 'd7', time: '21:30', title: 'plan.items.d7', category: 'Style',    duration: '4m'  },
   ],
   lean: [
-    { id: 'l1', time: '06:30', title: 'Fasted walk',         category: 'Physique', duration: '30m' },
-    { id: 'l2', time: '07:30', title: 'AM skin + hydration', category: 'Grooming', duration: '5m'  },
-    { id: 'l3', time: '12:00', title: 'High-protein meal',   category: 'Physique', duration: '15m' },
-    { id: 'l4', time: '17:00', title: 'Lift · 6×6',          category: 'Physique', duration: '50m' },
-    { id: 'l5', time: '18:30', title: 'Sauna or stretch',    category: 'Physique', duration: '20m' },
-    { id: 'l6', time: '21:00', title: 'PM skin barrier',     category: 'Grooming', duration: '6m'  },
+    { id: 'l1', time: '06:30', title: 'plan.items.l1', category: 'Physique', duration: '30m' },
+    { id: 'l2', time: '07:30', title: 'plan.items.l2', category: 'Grooming', duration: '5m'  },
+    { id: 'l3', time: '12:00', title: 'plan.items.l3', category: 'Physique', duration: '15m' },
+    { id: 'l4', time: '17:00', title: 'plan.items.l4', category: 'Physique', duration: '50m' },
+    { id: 'l5', time: '18:30', title: 'plan.items.l5', category: 'Physique', duration: '20m' },
+    { id: 'l6', time: '21:00', title: 'plan.items.l6', category: 'Grooming', duration: '6m'  },
   ],
   travel: [
-    { id: 't1', time: '08:00', title: 'Walk a new street',   category: 'Physique', duration: '20m' },
-    { id: 't2', time: '08:30', title: 'AM skin minimal',     category: 'Grooming', duration: '3m'  },
-    { id: 't3', time: '12:00', title: 'Hotel-room circuit',  category: 'Physique', duration: '15m' },
-    { id: 't4', time: '20:00', title: 'Hydration check-in',  category: 'Physique', duration: '2m'  },
-    { id: 't5', time: '22:00', title: 'PM skin barrier',     category: 'Grooming', duration: '4m'  },
+    { id: 't1', time: '08:00', title: 'plan.items.t1', category: 'Physique', duration: '20m' },
+    { id: 't2', time: '08:30', title: 'plan.items.t2', category: 'Grooming', duration: '3m'  },
+    { id: 't3', time: '12:00', title: 'plan.items.t3', category: 'Physique', duration: '15m' },
+    { id: 't4', time: '20:00', title: 'plan.items.t4', category: 'Physique', duration: '2m'  },
+    { id: 't5', time: '22:00', title: 'plan.items.t5', category: 'Grooming', duration: '4m'  },
   ],
   recovery: [
-    { id: 'r1', time: '07:30', title: 'Easy walk',           category: 'Physique', duration: '20m' },
-    { id: 'r2', time: '08:00', title: 'Skin: AM gentle',     category: 'Grooming', duration: '3m'  },
-    { id: 'r3', time: '13:00', title: 'Mobility flow',       category: 'Physique', duration: '12m' },
-    { id: 'r4', time: '17:00', title: 'Sauna or stretch',    category: 'Physique', duration: '20m' },
-    { id: 'r5', time: '21:00', title: 'PM skin barrier',     category: 'Grooming', duration: '6m'  },
-    { id: 'r6', time: '22:00', title: 'Lights down, no screens', category: 'Mind', duration: '0m' },
+    { id: 'r1', time: '07:30', title: 'plan.items.r1', category: 'Physique', duration: '20m' },
+    { id: 'r2', time: '08:00', title: 'plan.items.r2', category: 'Grooming', duration: '3m'  },
+    { id: 'r3', time: '13:00', title: 'plan.items.r3', category: 'Physique', duration: '12m' },
+    { id: 'r4', time: '17:00', title: 'plan.items.r4', category: 'Physique', duration: '20m' },
+    { id: 'r5', time: '21:00', title: 'plan.items.r5', category: 'Grooming', duration: '6m'  },
+    { id: 'r6', time: '22:00', title: 'plan.items.r6', category: 'Mind', duration: '0m' },
   ],
   cut: [
-    { id: 'c1', time: '06:30', title: 'Fasted walk',         category: 'Physique', duration: '30m' },
-    { id: 'c2', time: '07:30', title: 'AM hydration + SPF',  category: 'Grooming', duration: '4m'  },
-    { id: 'c3', time: '12:00', title: 'High-protein meal',   category: 'Physique', duration: '15m' },
-    { id: 'c4', time: '17:00', title: 'Compound lifts',      category: 'Physique', duration: '55m' },
-    { id: 'c5', time: '19:00', title: 'Low-carb evening',    category: 'Physique', duration: '10m' },
-    { id: 'c6', time: '21:00', title: 'PM skin · retinol',   category: 'Grooming', duration: '6m'  },
+    { id: 'c1', time: '06:30', title: 'plan.items.c1', category: 'Physique', duration: '30m' },
+    { id: 'c2', time: '07:30', title: 'plan.items.c2', category: 'Grooming', duration: '4m'  },
+    { id: 'c3', time: '12:00', title: 'plan.items.c3', category: 'Physique', duration: '15m' },
+    { id: 'c4', time: '17:00', title: 'plan.items.c4', category: 'Physique', duration: '55m' },
+    { id: 'c5', time: '19:00', title: 'plan.items.c5', category: 'Physique', duration: '10m' },
+    { id: 'c6', time: '21:00', title: 'plan.items.c6', category: 'Grooming', duration: '6m'  },
   ],
   sundayReset: [
-    { id: 'sr1', time: '09:00', title: 'Wash + groom · long shower',  category: 'Grooming', duration: '20m' },
-    { id: 'sr2', time: '10:00', title: 'Laundry: wash + hang',        category: 'Style',    duration: '15m' },
-    { id: 'sr3', time: '11:00', title: 'Plan the week · 5 priorities', category: 'Mind',    duration: '15m' },
-    { id: 'sr4', time: '14:00', title: 'Easy walk · no phone',        category: 'Physique', duration: '40m' },
-    { id: 'sr5', time: '18:00', title: 'Lay out Monday fit',          category: 'Style',    duration: '5m'  },
-    { id: 'sr6', time: '21:00', title: 'PM skin · trim · clip',       category: 'Grooming', duration: '12m' },
+    { id: 'sr1', time: '09:00', title: 'plan.items.sr1', category: 'Grooming', duration: '20m' },
+    { id: 'sr2', time: '10:00', title: 'plan.items.sr2', category: 'Style',    duration: '15m' },
+    { id: 'sr3', time: '11:00', title: 'plan.items.sr3', category: 'Mind',     duration: '15m' },
+    { id: 'sr4', time: '14:00', title: 'plan.items.sr4', category: 'Physique', duration: '40m' },
+    { id: 'sr5', time: '18:00', title: 'plan.items.sr5', category: 'Style',    duration: '5m'  },
+    { id: 'sr6', time: '21:00', title: 'plan.items.sr6', category: 'Grooming', duration: '12m' },
   ],
   focus: [
-    { id: 'df1', time: '06:45', title: 'Make the bed',                 category: 'Mind',     duration: '1m'  },
-    { id: 'df2', time: '07:00', title: 'AM skin · minimal',            category: 'Grooming', duration: '3m'  },
-    { id: 'df3', time: '07:30', title: 'Deep work · one task · 90m',   category: 'Mind',     duration: '90m' },
-    { id: 'df4', time: '12:00', title: 'Walk · phone in pocket',       category: 'Physique', duration: '20m' },
-    { id: 'df5', time: '17:00', title: 'Short lift · 25m',             category: 'Physique', duration: '25m' },
-    { id: 'df6', time: '21:00', title: 'Review the day · 3 lines',     category: 'Mind',     duration: '5m'  },
-    { id: 'df7', time: '22:00', title: 'Phone in other room',          category: 'Mind',     duration: '0m'  },
+    { id: 'df1', time: '06:45', title: 'plan.items.df1', category: 'Mind',     duration: '1m'  },
+    { id: 'df2', time: '07:00', title: 'plan.items.df2', category: 'Grooming', duration: '3m'  },
+    { id: 'df3', time: '07:30', title: 'plan.items.df3', category: 'Mind',     duration: '90m' },
+    { id: 'df4', time: '12:00', title: 'plan.items.df4', category: 'Physique', duration: '20m' },
+    { id: 'df5', time: '17:00', title: 'plan.items.df5', category: 'Physique', duration: '25m' },
+    { id: 'df6', time: '21:00', title: 'plan.items.df6', category: 'Mind',     duration: '5m'  },
+    { id: 'df7', time: '22:00', title: 'plan.items.df7', category: 'Mind',     duration: '0m'  },
   ],
   // Built from the Stoic morning / work / evening tradition. Marcus Aurelius
   // started with "What's in my control today?"; finished with "What did I
   // learn?". Same shape, modern actions.
   stoic: [
-    { id: 'st1', time: '06:30', title: 'Premeditate · what could go wrong', category: 'Mind',     duration: '3m'  },
-    { id: 'st2', time: '06:45', title: 'Cold rinse · voluntary discomfort', category: 'Grooming', duration: '2m'  },
-    { id: 'st3', time: '07:00', title: 'One priority · written down',       category: 'Mind',     duration: '2m'  },
-    { id: 'st4', time: '13:00', title: 'Stillness · five breaths',          category: 'Mind',     duration: '2m'  },
-    { id: 'st5', time: '17:30', title: 'Train the body · 30m',              category: 'Physique', duration: '30m' },
-    { id: 'st6', time: '21:00', title: 'Evening review · what served you',  category: 'Mind',     duration: '8m'  },
-    { id: 'st7', time: '22:00', title: 'Lights down · phone away',          category: 'Mind',     duration: '0m'  },
+    { id: 'st1', time: '06:30', title: 'plan.items.st1', category: 'Mind',     duration: '3m'  },
+    { id: 'st2', time: '06:45', title: 'plan.items.st2', category: 'Grooming', duration: '2m'  },
+    { id: 'st3', time: '07:00', title: 'plan.items.st3', category: 'Mind',     duration: '2m'  },
+    { id: 'st4', time: '13:00', title: 'plan.items.st4', category: 'Mind',     duration: '2m'  },
+    { id: 'st5', time: '17:30', title: 'plan.items.st5', category: 'Physique', duration: '30m' },
+    { id: 'st6', time: '21:00', title: 'plan.items.st6', category: 'Mind',     duration: '8m'  },
+    { id: 'st7', time: '22:00', title: 'plan.items.st7', category: 'Mind',     duration: '0m'  },
   ],
 };
 
 export const DEFAULT_PLAN = PLAN_TEMPLATES.foundations;
+
+/**
+ * Resolve a plan item's display title. Built-in template items carry an
+ * i18n key (`plan.items.<id>`); user-created and custom items carry free
+ * text. The prefix check keeps both working through one render path.
+ */
+export function planItemTitle(title: string, t: (k: string) => string): string {
+  return title.startsWith('plan.items.') ? t(title) : title;
+}
 
 const USER_TEMPLATES_KEY = 'plan.userTemplates';
 
@@ -139,25 +151,25 @@ export async function deleteUserTemplate(id: string): Promise<void> {
  */
 const STARTER_BANK: Record<string, PlanItem[]> = {
   grooming: [
-    { id: 'sg1', time: '07:00', title: 'Cold rinse · 30 sec',     category: 'Grooming', duration: '2m' },
-    { id: 'sg2', time: '07:30', title: 'AM skin + SPF',           category: 'Grooming', duration: '4m' },
-    { id: 'sg3', time: '21:00', title: 'PM skin · gentle',        category: 'Grooming', duration: '5m' },
+    { id: 'sg1', time: '07:00', title: 'plan.items.sg1', category: 'Grooming', duration: '2m' },
+    { id: 'sg2', time: '07:30', title: 'plan.items.sg2', category: 'Grooming', duration: '4m' },
+    { id: 'sg3', time: '21:00', title: 'plan.items.sg3', category: 'Grooming', duration: '5m' },
   ],
   physique: [
-    { id: 'sp1', time: '12:30', title: 'Ten-minute walk',         category: 'Physique', duration: '10m' },
-    { id: 'sp2', time: '18:00', title: 'One set to discomfort',   category: 'Physique', duration: '15m' },
-    { id: 'sp3', time: '21:30', title: 'Hip flexor stretch',      category: 'Physique', duration: '3m' },
+    { id: 'sp1', time: '12:30', title: 'plan.items.sp1', category: 'Physique', duration: '10m' },
+    { id: 'sp2', time: '18:00', title: 'plan.items.sp2', category: 'Physique', duration: '15m' },
+    { id: 'sp3', time: '21:30', title: 'plan.items.sp3', category: 'Physique', duration: '3m' },
   ],
   style: [
-    { id: 'ss1', time: '21:45', title: 'Lay out tomorrow\'s fit', category: 'Style',    duration: '3m' },
+    { id: 'ss1', time: '21:45', title: 'plan.items.ss1', category: 'Style',    duration: '3m' },
   ],
   confidence: [
-    { id: 'sc1', time: '09:30', title: 'Posture: ribs over hips', category: 'Mind',     duration: '1m' },
-    { id: 'sc2', time: '14:00', title: 'Eye contact +1 second',   category: 'Mind',     duration: '0m' },
+    { id: 'sc1', time: '09:30', title: 'plan.items.sc1', category: 'Mind',     duration: '1m' },
+    { id: 'sc2', time: '14:00', title: 'plan.items.sc2', category: 'Mind',     duration: '0m' },
   ],
   discipline: [
-    { id: 'sd1', time: '06:45', title: 'Make the bed',            category: 'Mind',     duration: '1m' },
-    { id: 'sd2', time: '22:00', title: 'Phone in other room',     category: 'Mind',     duration: '0m' },
+    { id: 'sd1', time: '06:45', title: 'plan.items.sd1', category: 'Mind',     duration: '1m' },
+    { id: 'sd2', time: '22:00', title: 'plan.items.sd2', category: 'Mind',     duration: '0m' },
   ],
 };
 

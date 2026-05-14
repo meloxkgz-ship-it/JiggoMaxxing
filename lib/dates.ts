@@ -31,3 +31,31 @@ export function lastNDates(n: number): string[] {
 export function lastWeekDates(): string[] {
   return lastNDates(7);
 }
+
+/** BCP-47 tag for the app's two languages, for Intl date formatting. */
+export function localeTag(lang: 'en' | 'de'): string {
+  return lang === 'de' ? 'de-DE' : 'en-US';
+}
+
+/**
+ * Locale-aware date formatting. `toLocaleDateString(undefined, …)` follows the
+ * *device* locale, not the in-app language override — so dates rendered in
+ * English even when the app had been switched to German. Always route
+ * user-visible dates through this helper with the app's current `lang`.
+ */
+export function formatDate(
+  d: Date | number | string,
+  lang: 'en' | 'de',
+  opts: Intl.DateTimeFormatOptions,
+): string {
+  const date = d instanceof Date ? d : new Date(d);
+  return date.toLocaleDateString(localeTag(lang), opts);
+}
+
+/** Localised short weekday labels, Monday-first — for the plan week grid. */
+export function weekDayLabels(lang: 'en' | 'de'): string[] {
+  // 2024-01-01 is a Monday; walk seven days from it.
+  return Array.from({ length: 7 }, (_, i) =>
+    new Date(2024, 0, 1 + i).toLocaleDateString(localeTag(lang), { weekday: 'short' }),
+  );
+}

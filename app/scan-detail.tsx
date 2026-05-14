@@ -8,7 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { useT } from '@/lib/i18n';
+import { useLanguage, useT } from '@/lib/i18n';
+import { formatDate, localeTag } from '@/lib/dates';
 import { deleteScan, listScans } from '@/lib/scan';
 import { ScanResult } from '@/lib/types';
 
@@ -22,6 +23,7 @@ const MICRO_FOR: Record<string, { low: string; mid: string }> = {
 
 export default function ScanDetailScreen() {
   const t = useT();
+  const { lang } = useLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [scan, setScan] = useState<ScanResult | null>(null);
   const [allScans, setAllScans] = useState<ScanResult[]>([]);
@@ -99,7 +101,7 @@ export default function ScanDetailScreen() {
           {/* Date eyebrow — anchors the reading in time at a glance, dossier
               feel without a label proper. */}
           <Text style={styles.heroDate}>
-            {new Date(scan.createdAt).toLocaleDateString(undefined, {
+            {formatDate(scan.createdAt, lang, {
               weekday: 'long', month: 'long', day: 'numeric',
             }).toUpperCase()}
           </Text>
@@ -209,7 +211,7 @@ export default function ScanDetailScreen() {
         </View>
 
         <Text style={styles.meta}>
-          {new Date(scan.createdAt).toLocaleString()} · {t('scan.privacyNote')}
+          {new Date(scan.createdAt).toLocaleString(localeTag(lang))} · {t('scan.privacyNote')}
         </Text>
 
         <View style={{ height: 60 }} />

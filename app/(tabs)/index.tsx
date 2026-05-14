@@ -24,8 +24,9 @@ import {
 import { saveSettings as persistSettings } from '@/lib/settings';
 import { computeEdge, EdgeBreakdown } from '@/lib/edge';
 import { useLanguage, useT } from '@/lib/i18n';
+import { formatDate } from '@/lib/dates';
 import { getStreak, listEntries, todayKey } from '@/lib/journal';
-import { getActivePlan, getCompletion } from '@/lib/plan';
+import { getActivePlan, getCompletion, planItemTitle } from '@/lib/plan';
 import {
   canGraceToday,
   consumeMilestone,
@@ -252,7 +253,7 @@ export default function HomeHubScreen() {
 
   const lastJournal = journal[0];
   const recentScanRun = scan?.createdAt
-    ? new Date(scan.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+    ? formatDate(scan.createdAt, lang, { month: 'short', day: 'numeric' })
     : null;
 
   return (
@@ -289,7 +290,7 @@ export default function HomeHubScreen() {
 
         {/* Greeting */}
         <View style={styles.header}>
-          <Eyebrow>{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</Eyebrow>
+          <Eyebrow>{formatDate(new Date(), lang, { weekday: 'long', month: 'short', day: 'numeric' })}</Eyebrow>
           <Text style={styles.displayTitle}>{t('app.tagline').split('.')[0]}.</Text>
           <Text style={styles.tagline}>{greeting} {t('app.motto')}</Text>
         </View>
@@ -478,8 +479,8 @@ export default function HomeHubScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.todayTitle}>{a.title}</Text>
-                  <Text style={styles.todayMeta}>{a.category} · {a.duration}</Text>
+                  <Text style={styles.todayTitle}>{planItemTitle(a.title, t)}</Text>
+                  <Text style={styles.todayMeta}>{t(`plan.cat.${a.category}`)} · {a.duration}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
               </Pressable>
@@ -578,8 +579,8 @@ export default function HomeHubScreen() {
                     <Text style={styles.tomorrowTimeText}>{first.time}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.tomorrowTitle}>{first.title}</Text>
-                    <Text style={styles.tomorrowMeta}>{first.category} · {first.duration}</Text>
+                    <Text style={styles.tomorrowTitle}>{planItemTitle(first.title, t)}</Text>
+                    <Text style={styles.tomorrowMeta}>{t(`plan.cat.${first.category}`)} · {first.duration}</Text>
                   </View>
                   <Ionicons name="moon-outline" size={18} color={colors.bronze} />
                 </View>

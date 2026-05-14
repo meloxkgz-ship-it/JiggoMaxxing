@@ -1,4 +1,5 @@
 import { getJSON, setJSON } from './storage';
+import { tFor } from './i18n';
 import { JournalEntry } from './types';
 
 const KEY = 'journal';
@@ -71,12 +72,13 @@ export async function getStreak(): Promise<number> {
   return streak;
 }
 
-export function relativeDate(iso: string): string {
+export function relativeDate(iso: string, lang: 'en' | 'de' = 'en'): string {
   const t = new Date(iso + 'T00:00:00').getTime();
   const today = new Date(todayKey() + 'T00:00:00').getTime();
   const diff = Math.round((today - t) / 86400000);
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Yesterday';
-  if (diff < 7) return new Date(iso).toLocaleDateString(undefined, { weekday: 'short' });
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  if (diff === 0) return tFor(lang, 'common.today');
+  if (diff === 1) return tFor(lang, 'common.yesterday');
+  const locale = lang === 'de' ? 'de-DE' : 'en-US';
+  if (diff < 7) return new Date(iso).toLocaleDateString(locale, { weekday: 'short' });
+  return new Date(iso).toLocaleDateString(locale, { month: 'short', day: 'numeric' });
 }

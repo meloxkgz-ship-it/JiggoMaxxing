@@ -9,8 +9,8 @@ import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { useT } from '@/lib/i18n';
-import { lastNDates } from '@/lib/dates';
+import { useLanguage, useT } from '@/lib/i18n';
+import { lastNDates, formatDate, weekDayLabels } from '@/lib/dates';
 import { todayKey } from '@/lib/journal';
 import {
   ActiveTemplateId,
@@ -23,6 +23,7 @@ import {
   listUserTemplates,
   PlanTemplate,
   PLAN_TEMPLATES,
+  planItemTitle,
   saveUserTemplate,
   setActiveTemplate,
   toggleComplete,
@@ -30,15 +31,14 @@ import {
 } from '@/lib/plan';
 import { PlanItem } from '@/lib/types';
 
-const WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-
 // Derive the chip list from PLAN_TEMPLATES so adding a new built-in
 // template can't leave the picker out of sync again.
 const TEMPLATES = Object.keys(PLAN_TEMPLATES) as PlanTemplate[];
 
 export default function PlanScreen() {
   const t = useT();
+  const { lang } = useLanguage();
+  const WEEK_DAYS = weekDayLabels(lang);
   const [tpl, setTpl] = useState<ActiveTemplateId>('foundations');
   const [userTemplates, setUserTemplates] = useState<UserTemplate[]>([]);
   const [items, setItems] = useState<PlanItem[]>([]);
@@ -129,7 +129,7 @@ export default function PlanScreen() {
   const completed = doneToday.length;
   const total = items.length || 1;
   const todayIdx = (new Date().getDay() + 6) % 7;
-  const weekday = new Date().toLocaleDateString(undefined, { weekday: 'long' });
+  const weekday = formatDate(new Date(), lang, { weekday: 'long' });
 
   return (
     <View style={styles.root}>
@@ -235,14 +235,14 @@ export default function PlanScreen() {
                 <Pressable
                   onPress={() => onToggle(it.id)}
                   accessibilityRole="checkbox"
-                  accessibilityLabel={`${it.time} · ${it.title}`}
+                  accessibilityLabel={`${it.time} · ${planItemTitle(it.title, t)}`}
                   accessibilityState={{ checked: done }}
                   accessibilityHint={isCustom ? t('plan.editDeleteHint') : undefined}
                   onLongPress={
                     isCustom
                       ? () =>
                           Alert.alert(
-                            it.title,
+                            planItemTitle(it.title, t),
                             undefined,
                             [
                               { text: t('common.cancel'), style: 'cancel' },
@@ -269,10 +269,10 @@ export default function PlanScreen() {
                   <Text style={styles.rowTime}>{it.time}</Text>
                   <View style={{ flex: 1, marginLeft: spacing.md }}>
                     <Text style={[styles.rowTitle, done && styles.rowTitleDone]}>
-                      {it.title}
+                      {planItemTitle(it.title, t)}
                       {isCustom && <Text style={styles.customMark}>  ·</Text>}
                     </Text>
-                    <Text style={styles.rowMeta}>{it.category} · {it.duration}</Text>
+                    <Text style={styles.rowMeta}>{t(`plan.cat.${it.category}`)} · {it.duration}</Text>
                   </View>
                   <View style={[styles.check, done && styles.checkDone]}>
                     {done && (
@@ -312,7 +312,7 @@ export default function PlanScreen() {
                     Haptics.selectionAsync().catch(() => {});
                     // `YYYY-MM-DD` alone parses as UTC midnight → off-by-one
                     // for users west of UTC. Anchor at local midnight.
-                    const label = new Date(date + 'T00:00:00').toLocaleDateString(undefined, {
+                    const label = formatDate(new Date(date + 'T00:00:00'), lang, {
                       weekday: 'short', month: 'short', day: 'numeric',
                     });
                     Alert.alert(label, `${cnt} / ${items.length}`);
@@ -390,8 +390,8 @@ function NextUpCard({
           <Text style={styles.nextLabel}>{t('plan.nextUp')}</Text>
           <Text style={styles.nextWhen}>{diff <= 0 ? t('plan.nextNow') : t('plan.nextIn', { when })}</Text>
         </View>
-        <Text style={styles.nextTitle}>{next.it.title}</Text>
-        <Text style={styles.nextMeta}>{next.it.time} · {next.it.category} · {next.it.duration}</Text>
+        <Text style={styles.nextTitle}>{planItemTitle(next.it.title, t)}</Text>
+        <Text style={styles.nextMeta}>{next.it.time} · {t(`plan.cat.${next.it.category}`)} · {next.it.duration}</Text>
       </View>
     </View>
   );

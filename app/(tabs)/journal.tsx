@@ -15,7 +15,7 @@ import { Card } from '@/components/Card';
 import { Eyebrow } from '@/components/Eyebrow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
-import { useT } from '@/lib/i18n';
+import { useLanguage, useT } from '@/lib/i18n';
 import { deleteEntry, getStreak, listEntries, relativeDate } from '@/lib/journal';
 import { JournalEntry } from '@/lib/types';
 
@@ -31,6 +31,7 @@ const MOOD_COLORS: Record<string, string> = {
 
 export default function JournalScreen() {
   const t = useT();
+  const { lang } = useLanguage();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [streak, setStreak] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -174,7 +175,7 @@ export default function JournalScreen() {
           {entries.map((e) => (
             <Card key={e.id} variant="outline" style={styles.entry}>
               <View style={styles.entryHead}>
-                <Text style={styles.entryDate}>{relativeDate(e.date)}</Text>
+                <Text style={styles.entryDate}>{relativeDate(e.date, lang)}</Text>
                 <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
                   {e.mood && (
                     <View style={[styles.moodPill, { borderColor: MOOD_COLORS[e.mood] }]}>

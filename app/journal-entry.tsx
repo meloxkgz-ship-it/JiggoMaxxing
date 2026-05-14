@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Eyebrow } from '@/components/Eyebrow';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useLanguage, useT } from '@/lib/i18n';
+import { formatDate } from '@/lib/dates';
 import en from '@/lib/i18n/en';
 import de from '@/lib/i18n/de';
 import { addEntry, todayKey } from '@/lib/journal';
@@ -89,7 +90,7 @@ export default function JournalEntryScreen() {
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.section}>
             <Eyebrow>
-              {t('common.today')} · {new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}
+              {t('common.today')} · {formatDate(new Date(), lang, { weekday: 'long', month: 'short', day: 'numeric' })}
             </Eyebrow>
 
             <View style={styles.row}>

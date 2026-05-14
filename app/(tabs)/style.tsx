@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   Alert,
@@ -32,16 +32,20 @@ import {
   seedStarterCloset,
   Tone,
 } from '@/lib/closet';
-import { useT } from '@/lib/i18n';
+import { useLanguage, useT } from '@/lib/i18n';
+import { formatDate } from '@/lib/dates';
 
 const FILTERS: ('all' | Archetype)[] = ['all', ...ARCHETYPES];
 
 export default function StyleScreen() {
   const t = useT();
   const [items, setItems] = useState<ClosetItem[]>([]);
+  const params = useLocalSearchParams<{ tab?: string }>();
   const [filter, setFilter] = useState<'all' | Archetype>('all');
   const [toneFilter, setToneFilter] = useState<'all' | Tone>('all');
-  const [tab, setTab] = useState<'closet' | 'looks' | 'saved'>('closet');
+  const [tab, setTab] = useState<'closet' | 'looks' | 'saved'>(
+    params.tab === 'looks' || params.tab === 'saved' ? params.tab : 'closet',
+  );
   const [saved, setSaved] = useState<{ saved: SavedOutfit; outfit: Outfit | null }[]>([]);
 
   useFocusEffect(useCallback(() => {
@@ -218,6 +222,7 @@ function SavedView({
   onDelete: (s: SavedOutfit) => void;
 }) {
   const t = useT();
+  const { lang } = useLanguage();
   if (saved.length === 0) {
     return (
       <View style={styles.empty}>
@@ -246,7 +251,7 @@ function SavedView({
               {t(`style.archetypes.${s.archetype}`)} · {t(`style.occasions.${s.occasion}`)}
             </Text>
             <Text style={styles.savedMeta}>
-              {new Date(s.savedAt).toLocaleDateString()} · {outfit?.items.length ?? '—'}
+              {formatDate(s.savedAt, lang, { year: 'numeric', month: 'short', day: 'numeric' })} · {outfit?.items.length ?? '—'}
             </Text>
           </View>
           {/* Pin to the snapshot saved at outfit-creation. Recomputing via
