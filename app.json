@@ -2,7 +2,7 @@
   "expo": {
     "name": "JIGGO MAXXING",
     "slug": "JiggoMaxxing",
-    "version": "1.3.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "jiggomaxxing",
@@ -58,7 +58,8 @@
           "cameraPermission": "JIGGO MAXXING uses the camera so you can take private scans. Photos are processed locally and never leave your device."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
