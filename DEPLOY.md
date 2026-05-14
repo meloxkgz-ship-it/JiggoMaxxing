@@ -2,6 +2,27 @@
 
 Commands you (the user) need to run at the terminal. JS-side is complete and tsc + web-export clean.
 
+---
+
+## STATUS as of v3.29 (2026-05-14)
+
+JS-side launch blockers are **resolved**:
+- ✅ `app.json` version set to `1.0.0` (first submit)
+- ✅ `/upgrade` premium screen gated behind `lib/featureFlags.ts` → `PRO_ENABLED = false`. v1.0 ships **BYO-Anthropic-key only** — no visible purchase flow, so no 2.1/3.1.1 stub-purchase rejection. Flip the flag + ship an update once StoreKit is wired (see §6).
+- ✅ Scan dimensions de-PSL'd: `Symmetry` / `Lower-third` → `Recovery` / `Grooming edge` (controllable inputs only).
+- ✅ `expo-file-system` + `expo-notifications` config corrected; template cruft removed.
+- ✅ Privacy policy page written → `docs/privacy.html` (just needs hosting, see §4).
+
+**Remaining = all user-side, in order:**
+1. CocoaPods install (§1)
+2. First native build — proves the app compiles + runs (§2)
+3. Host `docs/privacy.html` → get the URL (§4)
+4. ASC record + metadata (§3)
+5. Screenshots (§5)
+6. Build + submit (§7)
+
+Commerce (§6) is **deferred** — v1.0 is BYO-key-only by design. Do not wire StoreKit for the first submit.
+
 ## 1) Native iOS toolchain (one-time)
 
 CocoaPods is the only blocker:
@@ -72,11 +93,21 @@ Apple is not flagging the word *looksmaxxing* itself — rating/PSL/before-after
 
 ## 4) Privacy policy URL
 
-Apple requires a hosted URL. Options:
-- Add a `/why` static page to `meloxkgz.github.io/jiggo-maxxing/privacy.html` containing the same essay-form copy as `app/why.tsx`.
-- Or use a one-page generator like `https://app-privacy-policy-generator.firebaseapp.com/`.
+Apple requires a hosted URL. **The page is already written** — `docs/privacy.html`
+in this repo. It matches the app's actual privacy behaviour (local-first, no
+analytics, no accounts, Coach turns → Anthropic only).
 
-The in-app essay at `/why` is your source of truth. Mirror it to the URL.
+Just host it. Fastest path:
+```sh
+# Option A — GitHub Pages (free)
+#   1. push this repo to GitHub
+#   2. Settings → Pages → deploy from /docs folder
+#   3. URL becomes: https://<user>.github.io/<repo>/privacy.html
+
+# Option B — any static host (Netlify drop, Vercel, Cloudflare Pages)
+#   drag docs/privacy.html in, copy the URL
+```
+Paste the resulting URL into ASC → App Privacy → Privacy Policy URL.
 
 ## 5) Screenshots
 
@@ -100,25 +131,22 @@ Min 3 screenshots; recommend 6:
 5. Coach in conversation
 6. Insights
 
-## 6) Commerce model — research-backed ladder
+## 6) Commerce model — DEFERRED to v1.1 (do not wire for first submit)
 
-Research from Adapty, RevenueCat 2025, Cal AI Superwall case study:
-- **Hard onboarding paywall** earns ~$3.09 RPI by D14 vs $0.38 for soft (8x).
-- **Onboarding placement** drives 60–80 % of subscription revenue.
-- **Free trial + weekly** converts trial-to-paid at 39.9 % median (H&F vertical), top decile 68 %.
-- **Annual at ~3.8x weekly price** anchors well: $39.99/yr against $4.99/wk = "Save 80 %".
+**v1.0 ships BYO-Anthropic-key only.** The `/upgrade` screen exists and is
+fully designed but is gated off via `lib/featureFlags.ts` → `PRO_ENABLED = false`.
+Shipping a visible pricing flow with a stub purchase = guaranteed App Review
+rejection (2.1 / 3.1.1). So the first submit has no paywall at all — the Coach
+works when the user pastes their own key.
 
-**Recommended ladder** (shown as screen 7 after onboarding's 6 personalization screens):
-1. **7-day free trial → $4.99/wk** — default highlighted CTA
-2. **$39.99/yr** with `Save 80 %` badge
-3. **BYO Anthropic key** — tiny tertiary link beneath: *"I have my own Anthropic key — unlock Coach without subscribing"*. Keeps brand-honest stance; doesn't cannibalize because power users self-select and aren't the median LTV target anyway.
+**For v1.1**, when you're ready to monetise:
+1. Wire native StoreKit 2 (per `feedback_storekit_over_revenuecat.md` — no RevenueCat for a new iOS-only app).
+2. Stand up an Anthropic proxy (Cloudflare Worker / Vercel Function, per-user rate limit ~60 turns/day) so Pro users don't need their own key.
+3. Replace the stub in `app/upgrade.tsx`'s `start()` with the real purchase call.
+4. Flip `PRO_ENABLED` to `true` — every Pro surface (Settings card, Coach-lock CTA, onboarding 'pro' step, /rituals + /insights CTAs) lights back up automatically.
+5. Create the products in ASC: weekly $4.99 / yearly $39.99 / lifetime $79.99 (the `/upgrade` UI already renders this ladder).
 
-**Implementation path** (~2–3 days):
-- `expo-iap` or native StoreKit 2 bridge
-- Anthropic proxy: Cloudflare Worker / Vercel Function with per-user rate limit (e.g. 60 turns/day, 200/week)
-- RevenueCat optional — adds entitlement sync but +$X/mo per active sub. Native StoreKit 2 is the v1 path per `feedback_storekit_over_revenuecat.md`.
-
-**Run experiments** like Cal AI did (61 paywall A/Bs → +31 % trial-to-paid) — toggle weekly default vs annual default, trial length 7 vs 14 days, BYO link visibility.
+Research backing the ladder (Adapty, RevenueCat 2025, Cal AI Superwall case): hard onboarding paywall ~$3.09 RPI by D14 vs $0.38 soft; annual at ~3.8× weekly anchors "Save 80%"; trial-to-paid 39.9% median in H&F.
 
 ## 7) Build + submit
 
@@ -146,8 +174,26 @@ Wait for processing (5–15 min), then submit via `asc apps submit`.
 
 ## Known pre-flight checks
 
-- ITSAppUsesNonExemptEncryption: false  ✓ (in app.json infoPlist)
-- NSCameraUsageDescription ✓
-- NSPhotoLibraryUsageDescription ✓
+- `app.json` version `1.0.0` ✓
+- ITSAppUsesNonExemptEncryption: false ✓ (in app.json infoPlist)
+- NSCameraUsageDescription / NSPhotoLibraryUsageDescription / NSPhotoLibraryAddUsageDescription ✓
+- `expo-notifications` config plugin present ✓
+- `expo-file-system` explicit dependency ✓
 - Local-only data (no analytics, no accounts) ✓
-- Privacy publish must be done in ASC web UI (no public API)
+- No visible purchase flow (PRO_ENABLED = false) — no 3.1.1 risk ✓
+- Scan dimensions are controllable inputs only — no PSL/symmetry scoring ✓
+- Privacy policy page written (`docs/privacy.html`) — needs hosting
+- Privacy "nutrition label" publish must be done in ASC web UI (no public API)
+
+## App Review notes (anticipate the reviewer)
+
+If the reviewer questions the **scan** feature: it does not rate
+attractiveness. The six dimensions are controllable inputs (skin, recovery,
+grooming upkeep, brow upkeep, posture, hair upkeep), processed entirely
+on-device, never uploaded, with no PSL/tier/ranking vocabulary anywhere. The
+in-app `/why` essay and the onboarding pact both state this explicitly.
+
+If the reviewer questions the **BYO API key**: the user supplies their own
+Anthropic key, stored only in the device keychain, and pays Anthropic
+directly — JIGGO is not reselling or proxying a paid service, so 3.1.1 does
+not apply. The Coach is fully optional; the app is complete without it.
