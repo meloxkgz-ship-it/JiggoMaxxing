@@ -48,3 +48,6 @@ app-example
 
 # asc CLI tooling output
 .asc/
+
+# local build artifacts
+build/
