@@ -136,6 +136,19 @@ export default function InsightsScreen() {
           <BigStat label={t('home.statsJournal')} value={journalStreak.toString()} unit={t('home.statsDays')} />
         </View>
 
+        {/* Milestones entry — quiet row linking to the achievements ledger */}
+        <Pressable
+          style={styles.milestonesRow}
+          onPress={() => router.push('/achievements' as any)}
+          accessibilityRole="button"
+          accessibilityLabel={t('achievements.seeAll')}>
+          <View style={styles.milestonesGlyph}>
+            <Ionicons name="ribbon-outline" size={15} color={colors.bronze} />
+          </View>
+          <Text style={styles.milestonesText}>{t('achievements.seeAll')}</Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+        </Pressable>
+
         {/* Edge over time */}
         <Section title={t('home.insightsTrend')}>
           {recentScores.length === 0 ? (
@@ -425,6 +438,21 @@ const styles = StyleSheet.create({
   moodValue: { color: colors.textPrimary, fontFamily: type.family.sansBold, fontSize: 20, letterSpacing: type.letterSpacing.tight, marginTop: 4 },
   moodRibbon: { flexDirection: 'row', gap: 3, marginTop: spacing.md, height: 8 },
   moodRibbonCell: { flex: 1, borderRadius: 2 },
+
+  milestonesRow: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: StyleSheet.hairlineWidth, borderColor: colors.hairline,
+  },
+  milestonesGlyph: {
+    width: 30, height: 30, borderRadius: 9,
+    backgroundColor: 'rgba(176,138,90,0.10)',
+    borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(176,138,90,0.22)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  milestonesText: { flex: 1, color: colors.textPrimary, fontFamily: type.family.sansSemi, fontSize: 14 },
 
   proCta: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,

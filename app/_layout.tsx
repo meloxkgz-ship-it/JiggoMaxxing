@@ -192,6 +192,10 @@ export default function RootLayout() {
             name="upgrade"
             options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
           />
+          <Stack.Screen
+            name="achievements"
+            options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+          />
         </Stack>
         <StatusBar style="light" />
       </ThemeProvider>
