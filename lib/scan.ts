@@ -3,13 +3,17 @@ import { ScanResult } from './types';
 
 const KEY = 'scans';
 
+// Every dimension is a *controllable input* — something the user can move
+// with habits and routine. No facial-symmetry / "lower-third" PSL scoring:
+// that violates the brand pact (no aesthetic ranking of things you can't
+// change) and is a known App Review risk for looksmaxxing-adjacent apps.
 export const DIMENSIONS = [
-  'Skin clarity',
-  'Symmetry',
-  'Lower-third',
-  'Brow + frame',
-  'Posture line',
-  'Hair edge',
+  'Skin clarity',   // skincare routine
+  'Recovery',       // sleep + hydration showing in the face
+  'Grooming edge',  // beard line, neck, jaw upkeep
+  'Brow + frame',   // brow trim + framing
+  'Posture line',   // posture
+  'Hair edge',      // haircut + hairline upkeep
 ] as const;
 
 /**

@@ -13,10 +13,11 @@ import { deleteScan, listScans } from '@/lib/scan';
 import { ScanResult } from '@/lib/types';
 
 const MICRO_FOR: Record<string, { low: string; mid: string }> = {
-  'Skin clarity': { low: 'scan.micro.skinLow', mid: 'scan.micro.skinMid' },
-  'Symmetry':     { low: 'scan.micro.symLow',  mid: 'scan.micro.symMid'  },
-  'Posture line': { low: 'scan.micro.postureLow', mid: 'scan.micro.postureMid' },
-  'Hair edge':    { low: 'scan.micro.hairLow', mid: 'scan.micro.hairMid' },
+  'Skin clarity':  { low: 'scan.micro.skinLow',     mid: 'scan.micro.skinMid' },
+  'Recovery':      { low: 'scan.micro.recoveryLow', mid: 'scan.micro.recoveryMid' },
+  'Grooming edge': { low: 'scan.micro.groomLow',    mid: 'scan.micro.groomMid' },
+  'Posture line':  { low: 'scan.micro.postureLow',  mid: 'scan.micro.postureMid' },
+  'Hair edge':     { low: 'scan.micro.hairLow',     mid: 'scan.micro.hairMid' },
 };
 
 export default function ScanDetailScreen() {
