@@ -1,186 +1,149 @@
 #!/usr/bin/env python3
-"""Generate JIGGO MAXXING app icon + splash icon (PNG).
+"""Generate the JIGGO MAXXING app icon set — premium dark-luxury treatment.
 
-iOS App Store icon: 1024×1024.
-Splash icon: 200 wide (matches app.json imageWidth).
+Design language: jet-black warm radial field, a Futura-Bold "JM" monogram
+rendered in brushed-bronze (vertical metallic gradient + emboss), no inner
+frame. iOS rounds the corners itself, so the source is a full-bleed square.
+
+Outputs (assets/images/):
+  icon.png                      1024  iOS / App Store, opaque RGB
+  splash-icon.png                512  mark-only on transparent (expo splash)
+  android-icon-foreground.png   1024  mark + soft pad, transparent
+  android-icon-background.png   1024  solid ink
+  android-icon-monochrome.png   1024  mark in white, transparent
+  favicon.png                     64  small opaque RGB
 """
 import os
-from typing import Optional
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 OUT = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) + "/assets/images"
-INK = (8, 8, 8)
-ELEVATED = (20, 20, 20)
-BRONZE = (176, 138, 90)
-BRONZE_BRIGHT = (198, 161, 106)
+
+# --- palette -----------------------------------------------------------------
+INK_CENTER = (26, 21, 14)     # warm near-black, glows behind the mark
+INK_EDGE   = (6, 5, 4)        # cooler near-black at the corners
+GLOW       = (150, 112, 64)   # bronze haze behind the monogram
+
+# brushed-bronze vertical gradient stops (top -> bottom)
+METAL = [
+    (0.00, (250, 233, 198)),  # near-white catch-light on the top edge
+    (0.14, (230, 198, 142)),  # bright gold
+    (0.42, (193, 150, 96)),   # brand bronze
+    (0.72, (150, 108, 64)),   # mid shadow
+    (1.00, (116, 80, 48)),    # deep base
+]
+
+FUTURA = "/System/Library/Fonts/Futura.ttc"   # index 2 = Futura Bold
 
 
-def find_font(prefer_thin: bool = False) -> Optional[str]:
-    candidates = (
-        [
-            "/System/Library/Fonts/HelveticaNeue.ttc",
-            "/System/Library/Fonts/Avenir Next.ttc",
-            "/System/Library/Fonts/Helvetica.ttc",
-        ]
-        if prefer_thin
-        else [
-            "/Library/Fonts/Arial Black.ttf",
-            "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
-            "/System/Library/Fonts/Helvetica.ttc",
-            "/System/Library/Fonts/HelveticaNeue.ttc",
-        ]
-    )
-    for p in candidates:
-        if os.path.exists(p):
-            return p
-    return None
-
-
-def draw_text_letter(draw, ch: str, font, x: int, y: int, color):
-    """Draw a single letter at exact (x, y) — left/top-anchored."""
-    try:
-        box = draw.textbbox((0, 0), ch, font=font)
-        draw.text((x - box[0], y - box[1]), ch, font=font, fill=color)
-        return box[2] - box[0], box[3] - box[1]
-    except Exception:
-        w, h = font.getsize(ch)
-        draw.text((x, y), ch, font=font, fill=color)
-        return w, h
-
-
-def draw_icon(size: int, path: str, *, frame_inset_ratio: float = 0.16, mark_size_ratio: float = 0.34) -> None:
-    img = Image.new("RGB", (size, size), INK)
-    draw = ImageDraw.Draw(img)
-
-    # Faint bronze sheen — diagonal gradient sketch via overlay rectangles
-    for i in range(6):
-        a = 14 + i
-        draw.rectangle(
-            (size * (0.02 + i * 0.005),
-             size * (0.02 + i * 0.005),
-             size * (0.98 - i * 0.005),
-             size * (0.98 - i * 0.005)),
-            outline=(a, a, a),
-        )
-
-    # Bronze frame (rounded square outline)
-    inset = int(size * frame_inset_ratio)
-    radius = int(size * 0.13)
-    stroke = max(3, int(size * 0.022))
-    draw.rounded_rectangle(
-        (inset, inset, size - inset, size - inset),
-        radius=radius,
-        outline=BRONZE,
-        width=stroke,
+# --- gradient helpers --------------------------------------------------------
+def radial_bg(size, center, edge, falloff=1.35):
+    """Warm radial field: `center` colour in the middle easing to `edge`."""
+    base = Image.radial_gradient("L").resize((size, size), Image.BICUBIC)
+    if falloff != 1.0:
+        base = base.point(lambda v: int(255 * ((v / 255) ** falloff)))
+    return Image.composite(
+        Image.new("RGB", (size, size), edge),
+        Image.new("RGB", (size, size), center),
+        base,
     )
 
-    # JM monogram — draw letters separately with comfortable kerning
-    font_path = find_font(prefer_thin=True)
-    target_h = int(size * mark_size_ratio)
-    if font_path:
-        font = ImageFont.truetype(font_path, target_h)
-        # measure widths of each letter
-        box_j = draw.textbbox((0, 0), "J", font=font)
-        box_m = draw.textbbox((0, 0), "M", font=font)
-        wj, hj = box_j[2] - box_j[0], box_j[3] - box_j[1]
-        wm, hm = box_m[2] - box_m[0], box_m[3] - box_m[1]
-        kern = int(size * 0.045)  # generous breathing room between letters
-        total_w = wj + kern + wm
-        total_h = max(hj, hm)
-        x_start = (size - total_w) // 2
-        y_top = (size - total_h) // 2
-        draw_text_letter(draw, "J", font, x_start, y_top + (total_h - hj) // 2, BRONZE)
-        draw_text_letter(draw, "M", font, x_start + wj + kern, y_top + (total_h - hm) // 2, BRONZE)
-    else:
-        cx = size // 2
-        cy = size // 2
-        r = int(size * 0.18)
-        draw.ellipse((cx - r, cy - r, cx + r, cy + r), outline=BRONZE, width=stroke)
 
-    img.save(path, "PNG")
+def vgradient(w, h, stops):
+    """Vertical multi-stop gradient as an RGB image."""
+    col = Image.new("RGB", (1, h))
+    px = col.load()
+    for y in range(h):
+        t = y / max(1, h - 1)
+        for i in range(len(stops) - 1):
+            p0, c0 = stops[i]
+            p1, c1 = stops[i + 1]
+            if t <= p1 or i == len(stops) - 2:
+                f = 0 if p1 == p0 else max(0.0, min(1.0, (t - p0) / (p1 - p0)))
+                px[0, y] = tuple(int(c0[k] + (c1[k] - c0[k]) * f) for k in range(3))
+                break
+    return col.resize((w, h))
 
 
-def draw_adaptive_foreground(size: int, path: str) -> None:
-    # Android foreground: monogram with kerning on transparent
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    inset = int(size * 0.24)
-    radius = int(size * 0.08)
-    stroke = max(3, int(size * 0.018))
-    draw.rounded_rectangle(
-        (inset, inset, size - inset, size - inset),
-        radius=radius,
-        outline=BRONZE,
-        width=stroke,
-    )
-    font_path = find_font()
-    if font_path:
-        font = ImageFont.truetype(font_path, int(size * 0.34))
-        box_j = draw.textbbox((0, 0), "J", font=font)
-        box_m = draw.textbbox((0, 0), "M", font=font)
-        wj, hj = box_j[2] - box_j[0], box_j[3] - box_j[1]
-        wm, hm = box_m[2] - box_m[0], box_m[3] - box_m[1]
-        kern = int(size * 0.045)
-        total_w = wj + kern + wm
-        total_h = max(hj, hm)
-        x = (size - total_w) // 2
-        y = (size - total_h) // 2
-        draw_text_letter(draw, "J", font, x, y + (total_h - hj) // 2, BRONZE)
-        draw_text_letter(draw, "M", font, x + wj + kern, y + (total_h - hm) // 2, BRONZE)
-    img.save(path, "PNG")
+# --- monogram ----------------------------------------------------------------
+def mark_mask(size, height_ratio, kern_ratio):
+    """White 'JM' monogram on a black L-mask, optically centred."""
+    mask = Image.new("L", (size, size), 0)
+    d = ImageDraw.Draw(mask)
+    font = ImageFont.truetype(FUTURA, int(size * height_ratio), index=2)  # Bold
+
+    bj = d.textbbox((0, 0), "J", font=font)
+    bm = d.textbbox((0, 0), "M", font=font)
+    wj, hj = bj[2] - bj[0], bj[3] - bj[1]
+    wm, hm = bm[2] - bm[0], bm[3] - bm[1]
+    kern = int(size * kern_ratio)
+    total_w = wj + kern + wm
+    total_h = max(hj, hm)
+    x = (size - total_w) // 2
+    y = (size - total_h) // 2
+
+    d.text((x - bj[0], y + (total_h - hj) // 2 - bj[1]), "J", font=font, fill=255)
+    d.text((x + wj + kern - bm[0], y + (total_h - hm) // 2 - bm[1]), "M", font=font, fill=255)
+    return mask
 
 
-def draw_adaptive_background(size: int, path: str) -> None:
-    img = Image.new("RGB", (size, size), INK)
-    img.save(path, "PNG")
+def metal_mark(size, height_ratio=0.38, kern_ratio=0.05):
+    """RGBA monogram filled with the brushed-bronze gradient; transparent elsewhere."""
+    mask = mark_mask(size, height_ratio, kern_ratio)
+    bbox = mask.getbbox()
+    grad = Image.new("RGB", (size, size), METAL[-1][1])
+    grad.paste(vgradient(size, bbox[3] - bbox[1], METAL), (0, bbox[1]))
+    layer = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    layer.paste(grad, (0, 0), mask)
+    return layer, mask
 
 
-def draw_monochrome(size: int, path: str) -> None:
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    inset = int(size * 0.24)
-    radius = int(size * 0.08)
-    stroke = max(3, int(size * 0.018))
-    draw.rounded_rectangle(
-        (inset, inset, size - inset, size - inset),
-        radius=radius,
-        outline=(255, 255, 255, 230),
-        width=stroke,
-    )
-    font_path = find_font()
-    if font_path:
-        font = ImageFont.truetype(font_path, int(size * 0.34))
-        box_j = draw.textbbox((0, 0), "J", font=font)
-        box_m = draw.textbbox((0, 0), "M", font=font)
-        wj, hj = box_j[2] - box_j[0], box_j[3] - box_j[1]
-        wm, hm = box_m[2] - box_m[0], box_m[3] - box_m[1]
-        kern = int(size * 0.045)
-        total_w = wj + kern + wm
-        total_h = max(hj, hm)
-        x = (size - total_w) // 2
-        y = (size - total_h) // 2
-        white = (255, 255, 255, 240)
-        draw_text_letter(draw, "J", font, x, y + (total_h - hj) // 2, white)
-        draw_text_letter(draw, "M", font, x + wj + kern, y + (total_h - hm) // 2, white)
-    img.save(path, "PNG")
+# --- compositions ------------------------------------------------------------
+def build_icon(size):
+    """Full opaque app icon: radial field + bronze haze + floor shadow + monogram."""
+    img = radial_bg(size, INK_CENTER, INK_EDGE).convert("RGBA")
+    layer, mask = metal_mark(size)
+
+    # bronze haze behind the mark
+    glow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    glow.paste(GLOW + (255,), (0, 0), mask)
+    glow = glow.filter(ImageFilter.GaussianBlur(size * 0.055))
+    glow.putalpha(glow.getchannel("A").point(lambda v: int(v * 0.42)))
+    img = Image.alpha_composite(img, glow)
+
+    # soft floor shadow — the mark sits a hair above the field
+    drop = max(2, int(size * 0.016))
+    shadow = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    sm = mask.transform(
+        (size, size), Image.AFFINE, (1, 0, 0, 0, 1, -drop), resample=Image.BICUBIC
+    ).filter(ImageFilter.GaussianBlur(size * 0.02))
+    shadow.paste((2, 1, 0, 255), (0, 0), sm)
+    shadow.putalpha(shadow.getchannel("A").point(lambda v: int(v * 0.55)))
+    img = Image.alpha_composite(img, shadow)
+
+    img = Image.alpha_composite(img, layer)
+    return img.convert("RGB")
 
 
-def draw_favicon(size: int, path: str) -> None:
-    draw_icon(size, path, frame_inset_ratio=0.18, mark_size_ratio=0.5)
+def build_mark_only(size, height_ratio=0.46):
+    layer, _ = metal_mark(size, height_ratio=height_ratio)
+    return layer
 
 
-def main() -> None:
+def main():
     os.makedirs(OUT, exist_ok=True)
-    # Main App Store icon
-    draw_icon(1024, os.path.join(OUT, "icon.png"))
-    # Splash (200×200 nominally, render at higher res so it scales)
-    draw_icon(512, os.path.join(OUT, "splash-icon.png"), frame_inset_ratio=0.22, mark_size_ratio=0.42)
-    # Android adaptive
-    draw_adaptive_foreground(1024, os.path.join(OUT, "android-icon-foreground.png"))
-    draw_adaptive_background(1024, os.path.join(OUT, "android-icon-background.png"))
-    draw_monochrome(1024, os.path.join(OUT, "android-icon-monochrome.png"))
-    # Favicon
-    draw_favicon(48, os.path.join(OUT, "favicon.png"))
+
+    build_icon(1024).save(os.path.join(OUT, "icon.png"))
+    build_mark_only(512, height_ratio=0.40).save(os.path.join(OUT, "splash-icon.png"))
+    build_mark_only(1024, height_ratio=0.34).save(os.path.join(OUT, "android-icon-foreground.png"))
+    Image.new("RGB", (1024, 1024), INK_EDGE).save(os.path.join(OUT, "android-icon-background.png"))
+
+    # monochrome — mark silhouette in white
+    _, mask = metal_mark(1024, height_ratio=0.34)
+    mono = Image.new("RGBA", (1024, 1024), (0, 0, 0, 0))
+    mono.paste((255, 255, 255, 240), (0, 0), mask)
+    mono.save(os.path.join(OUT, "android-icon-monochrome.png"))
+
+    build_icon(64).save(os.path.join(OUT, "favicon.png"))
     print(f"icons written to {OUT}")
 
 
