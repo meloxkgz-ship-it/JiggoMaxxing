@@ -1,0 +1,19 @@
+name = "jiggo-coach-proxy"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+
+# Per-user daily rate-limit counters.
+# Create the namespace once, then paste its id below:
+#   npx wrangler kv namespace create COACH_RL
+[[kv_namespaces]]
+binding = "COACH_RL"
+id = "PASTE_KV_NAMESPACE_ID_HERE"
+
+[vars]
+BUNDLE_ID = "com.jiggo.maxxing"
+ALLOWED_PRODUCT_IDS = "com.jiggo.maxxing.pro.weekly,com.jiggo.maxxing.pro.yearly,com.jiggo.maxxing.pro.lifetime"
+DAILY_LIMIT = "60"
+
+# Secrets — set with `npx wrangler secret put <NAME>`, never commit:
+#   ANTHROPIC_API_KEY     the proxy's own Anthropic key (this is what gets spent)
+#   APPLE_ROOT_CA_G3_B64  base64 DER of "Apple Root CA - G3" — see README §3 (strongly recommended)

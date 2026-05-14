@@ -1,0 +1,20 @@
+{
+  "name": "jiggo-coach-proxy",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker that relays JIGGO Coach turns to the Anthropic API — auth via StoreKit 2 signed transactions, per-user daily rate limit.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "jose": "^5.9.6"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^3.99.0"
+  }
+}
