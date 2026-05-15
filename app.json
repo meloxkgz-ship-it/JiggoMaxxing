@@ -59,7 +59,8 @@
         }
       ],
       "expo-localization",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-iap"
     ],
     "experiments": {
       "typedRoutes": true,

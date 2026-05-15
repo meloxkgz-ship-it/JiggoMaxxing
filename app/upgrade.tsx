@@ -15,13 +15,14 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Eyebrow } from '@/components/Eyebrow';
 import { JMMark } from '@/components/JMMark';
 import { colors, radius, spacing, type } from '@/constants/jiggo-theme';
 import { useLanguage, useT } from '@/lib/i18n';
+import { purchasePro, restorePro } from '@/lib/iap';
 import en from '@/lib/i18n/en';
 import de from '@/lib/i18n/de';
 
@@ -42,17 +43,48 @@ export default function UpgradeScreen() {
   const { lang } = useLanguage();
   const [tier, setTier] = useState<Tier>('yearly');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
   const faq: { q: string; a: string }[] = ((lang === 'de' ? de : en) as any).upgrade.faq ?? [];
 
-  const start = () => {
+  const onProActive = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    // Real purchase wiring lands when StoreKit is set up. For now we level
-    // with the user — no fake spinner, no fake success.
-    Alert.alert(
-      t('upgrade.comingSoonTitle'),
-      t('upgrade.comingSoonBody'),
-      [{ text: 'OK' }],
-    );
+    Alert.alert(t('upgrade.proActiveTitle'), t('upgrade.proActiveBody'), [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
+  };
+
+  // Real StoreKit 2 purchase via lib/iap. expo-iap surfaces a user-cancel as
+  // an error — we swallow that one so cancelling never shows a failure alert.
+  const start = async () => {
+    if (busy) return;
+    Haptics.selectionAsync().catch(() => {});
+    setBusy(true);
+    try {
+      await purchasePro(tier);
+      onProActive();
+    } catch (e: any) {
+      const msg = String(e?.message ?? '');
+      if (!/cancel/i.test(msg)) {
+        Alert.alert(t('upgrade.purchaseFailedTitle'), msg || t('upgrade.purchaseFailedTitle'));
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const restore = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const entitlement = await restorePro();
+      entitlement
+        ? onProActive()
+        : Alert.alert(t('upgrade.restoreNoneTitle'), t('upgrade.restoreNoneBody'));
+    } catch (e: any) {
+      Alert.alert(t('upgrade.purchaseFailedTitle'), String(e?.message ?? ''));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -127,15 +159,28 @@ export default function UpgradeScreen() {
         </View>
 
         <Pressable
-          style={styles.cta}
+          style={[styles.cta, busy && styles.ctaBusy]}
           onPress={start}
+          disabled={busy}
           accessibilityRole="button"
+          accessibilityState={{ disabled: busy, busy }}
           accessibilityLabel={t('upgrade.startCta')}>
-          <Text style={styles.ctaText}>{t('upgrade.startCta')}</Text>
-          <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
+          {busy ? (
+            <ActivityIndicator color={colors.textOnBronze} />
+          ) : (
+            <>
+              <Text style={styles.ctaText}>{t('upgrade.startCta')}</Text>
+              <Ionicons name="arrow-forward" size={16} color={colors.textOnBronze} />
+            </>
+          )}
         </Pressable>
 
         <Text style={styles.fine}>{t('upgrade.fine')}</Text>
+
+        <Pressable onPress={restore} disabled={busy} style={styles.byoLink}>
+          <Ionicons name="refresh-outline" size={12} color={colors.textTertiary} />
+          <Text style={styles.byoText}>{t('upgrade.restore')}</Text>
+        </Pressable>
 
         <Pressable onPress={() => router.push('/settings' as any)} style={styles.byoLink}>
           <Ionicons name="key-outline" size={12} color={colors.textTertiary} />
@@ -323,6 +368,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     backgroundColor: colors.bronze,
   },
+  ctaBusy: { opacity: 0.6 },
   ctaText: { color: colors.textOnBronze, fontFamily: type.family.sansSemi, fontSize: 15, letterSpacing: 0.2 },
 
   fine: {

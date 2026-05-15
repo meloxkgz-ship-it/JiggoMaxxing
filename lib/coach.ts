@@ -6,6 +6,7 @@
  * disciplined, masculine, supportive. NEVER toxic looksmaxxing vocab.
  */
 import { computeEdge } from './edge';
+import { COACH_PROXY_URL, getProJws } from './iap';
 import { getApiKey, getSettings } from './settings';
 import { getJSON, setJSON } from './storage';
 import { CoachTurn } from './types';
@@ -75,46 +76,61 @@ async function buildUserContext(): Promise<string> {
   return parts.join(' ');
 }
 
-async function buildRequest(history: CoachTurn[], stream: boolean) {
-  const apiKey = await getApiKey();
-  if (!apiKey) {
-    throw new Error(
-      'No Anthropic API key set. Open Settings → Coach to add one.',
-    );
-  }
+type CoachRequest = { endpoint: string; headers: Record<string, string>; body: string };
+
+/**
+ * Resolve where a Coach turn goes:
+ *  - Pro path — proxy through the Coach Worker, which holds the Anthropic key
+ *    and verifies the StoreKit 2 transaction JWS we send as a Bearer token.
+ *  - BYO-key path — call the Anthropic API directly with the user's own key.
+ * Pro takes priority: a paying subscriber should never spend their own key.
+ */
+async function buildRequest(history: CoachTurn[], stream: boolean): Promise<CoachRequest> {
   const userContext = await buildUserContext();
   const messages = history.map((t) => ({ role: t.role, content: t.content }));
-  return {
-    apiKey,
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 600,
-      system: [
-        { type: 'text', text: SYSTEM_PROMPT },
-        { type: 'text', text: userContext },
-      ],
-      messages,
-      stream,
-    }),
-  };
+  const body = JSON.stringify({
+    model: MODEL,
+    max_tokens: 600,
+    system: [
+      { type: 'text', text: SYSTEM_PROMPT },
+      { type: 'text', text: userContext },
+    ],
+    messages,
+    stream,
+  });
+
+  const proJws = await getProJws();
+  if (proJws) {
+    return {
+      endpoint: COACH_PROXY_URL,
+      headers: { 'content-type': 'application/json', Authorization: `Bearer ${proJws}` },
+      body,
+    };
+  }
+
+  const apiKey = await getApiKey();
+  if (apiKey) {
+    return {
+      endpoint: ENDPOINT,
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body,
+    };
+  }
+
+  throw new Error('No Anthropic API key set. Open Settings → Coach to add one.');
 }
 
 export async function sendToCoach(
   history: CoachTurn[],
   signal?: AbortSignal,
 ): Promise<string> {
-  const { apiKey, body } = await buildRequest(history, false);
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body,
-    signal,
-  });
+  const { endpoint, headers, body } = await buildRequest(history, false);
+  const res = await fetch(endpoint, { method: 'POST', headers, body, signal });
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
@@ -142,18 +158,8 @@ export async function streamToCoach(
   onDelta: (chunk: string) => void,
   signal?: AbortSignal,
 ): Promise<string> {
-  const { apiKey, body } = await buildRequest(history, true);
-  const res = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body,
-    signal,
-  });
+  const { endpoint, headers, body } = await buildRequest(history, true);
+  const res = await fetch(endpoint, { method: 'POST', headers, body, signal });
 
   if (!res.ok) {
     const errText = await res.text().catch(() => '');
