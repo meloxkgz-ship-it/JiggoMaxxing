@@ -11,6 +11,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.jiggo.maxxing",
+      "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "JIGGO MAXXING uses the camera so you can take private scans. Photos are processed locally and never leave your device.",
         "NSPhotoLibraryUsageDescription": "JIGGO MAXXING reads from your photo library so you can pick existing photos for scans. Photos are processed locally and never leave your device.",

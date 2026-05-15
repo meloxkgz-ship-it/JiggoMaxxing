@@ -65,7 +65,19 @@ export default function RootLayout() {
     if (!navState?.key || onboarded === null) return;
     const inOnboarding = segments[0] === 'onboarding';
     if (!onboarded && !inOnboarding) {
-      router.replace('/onboarding' as any);
+      // Re-verify against disk before redirecting. After onboarding's
+      // finish() writes hasOnboarded=true and replaces to /(tabs), this
+      // effect re-fires with stale `onboarded=false` in React state and
+      // would kick the user straight back to step 1 — the rejection loop
+      // Apple hit in 2.1(a). Disk is authoritative; sync state from it.
+      (async () => {
+        const s = await getSettings();
+        if (s.hasOnboarded) {
+          setOnboarded(true);
+          return;
+        }
+        router.replace('/onboarding' as any);
+      })();
     }
   }, [navState?.key, onboarded, segments]);
 
